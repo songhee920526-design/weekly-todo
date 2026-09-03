@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>주간 할일</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F5F0;
+    --paper-raised:#FBFAF7;
+    --ink:#22262B;
+    --ink-soft:#4B5158;
+    --muted:#9AA098;
+    --line:#DEDCD2;
+    --pine:#3B6255;
+    --pine-soft:#E4ECE7;
+    --gold:#B9932F;
+    --gold-soft:#F3ECDA;
+    --coral:#B5533E;
+    --coral-soft:#F3E4E0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:44px 16px 90px;
+  }
+  .app{ width:100%; max-width:600px; }
+
+  header{ margin-bottom:24px; display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  h1{ font-size:21px; font-weight:650; letter-spacing:-0.01em; margin:0 0 3px; }
+  .today-line{ font-size:13px; color:var(--muted); font-weight:500; }
+  .sync-dot{
+    font-size:11px;
+    font-weight:600;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:5px;
+    white-space:nowrap;
+  }
+  .sync-dot .dot{ width:6px; height:6px; border-radius:50%; background:var(--pine); }
+  .sync-dot.offline .dot{ background:var(--coral); }
+  .sync-dot.syncing .dot{ background:var(--gold); }
+
+  .overdue-panel{
+    background:var(--gold-soft);
+    border:1px solid #E4D6A8;
+    border-radius:12px;
+    padding:14px 16px 6px;
+    margin-bottom:26px;
+  }
+  .overdue-title{ font-size:13px; font-weight:650; color:#8A6A1E; margin-bottom:8px; }
+  .overdue-item{ display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid #E9DCB2; }
+  .overdue-item:first-of-type{ border-top:none; }
+  .overdue-text{ flex:1; min-width:0; font-size:14.5px; font-weight:500; line-height:1.4; }
+  .overdue-meta{ display:block; font-size:11px; color:#93762C; margin-top:2px; font-weight:500; }
+  .overdue-item select{
+    font-family:inherit; font-size:12.5px; font-weight:600; color:var(--ink);
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:7px;
+    padding:6px 8px; max-width:118px; cursor:pointer;
+  }
+  .overdue-item .del{ flex-shrink:0; background:none; border:none; color:#93762C; cursor:pointer; padding:4px; border-radius:6px; opacity:.7; }
+  .overdue-item .del:hover{ background:var(--coral-soft); color:var(--coral); opacity:1; }
+
+  .add-panel{ background:var(--paper-raised); border:1.5px solid var(--line); border-radius:12px; padding:14px; margin-bottom:30px; }
+  .add-panel input[type=text]{
+    width:100%; font-family:inherit; font-size:16px; font-weight:500; padding:11px 4px;
+    border:none; border-bottom:1px solid var(--line); background:transparent; color:var(--ink);
+    outline:none; margin-bottom:12px;
+  }
+  .add-panel input[type=text]::placeholder{ color:var(--muted); font-weight:450; }
+  .add-panel input[type=text]:focus{ border-bottom-color:var(--pine); }
+
+  .pill-row{ display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; margin-bottom:10px; scrollbar-width:none; }
+  .pill-row::-webkit-scrollbar{ display:none; }
+  .pill{
+    flex-shrink:0; font-family:inherit; font-size:12.5px; font-weight:600; color:var(--ink-soft);
+    background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:7px 11px;
+    cursor:pointer; white-space:nowrap; transition:background .12s ease, color .12s ease, border-color .12s ease;
+  }
+  .pill.today{ color:var(--pine); }
+  .pill.selected{ background:var(--pine); border-color:var(--pine); color:#fff; }
+
+  .slot-row{ display:flex; gap:6px; align-items:center; }
+  .slot-btn{
+    font-family:inherit; font-size:12.5px; font-weight:600; color:var(--ink-soft);
+    background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:7px 12px; cursor:pointer;
+  }
+  .slot-btn.selected{ background:var(--ink); border-color:var(--ink); color:#fff; }
+  .slot-fixed{ font-size:12.5px; font-weight:600; color:var(--muted); padding:7px 2px; }
+
+  .add-btn{
+    display:block; width:100%; margin-top:12px; font-family:inherit; font-size:14px; font-weight:650;
+    color:#fff; background:var(--pine); border:none; border-radius:8px; padding:11px; cursor:pointer;
+  }
+  .add-btn:active{ opacity:.85; }
+  .add-btn:disabled{ opacity:.5; cursor:default; }
+
+  .day-section{ margin-bottom:22px; }
+  .day-header{ display:flex; align-items:baseline; gap:8px; margin-bottom:8px; padding-bottom:6px; border-bottom:1.5px solid var(--line); }
+  .day-section.today .day-header{ border-bottom-color:var(--pine); }
+  .day-name{ font-size:14.5px; font-weight:650; }
+  .day-section.today .day-name{ color:var(--pine); }
+  .day-date{ font-size:12.5px; color:var(--muted); font-weight:500; }
+  .today-tag{ font-size:10.5px; font-weight:650; color:#fff; background:var(--pine); border-radius:5px; padding:1px 6px; margin-left:auto; }
+
+  .slot-block{ margin-bottom:4px; }
+  .slot-label{ font-size:11.5px; font-weight:650; color:var(--muted); margin:10px 0 4px 2px; }
+  .slot-empty{ font-size:12.5px; color:var(--muted); padding:6px 2px; opacity:.7; }
+
+  ul.items{ list-style:none; margin:0; padding:0; }
+  li.item{
+    display:flex; align-items:flex-start; gap:11px; padding:9px 2px; border-radius:8px;
+    transition:opacity .22s ease, transform .22s ease, max-height .22s ease; max-height:80px;
+  }
+  li.item.removing{ opacity:0; transform:translateX(6px); max-height:0; padding-top:0; padding-bottom:0; overflow:hidden; }
+  .check{
+    flex-shrink:0; width:19px; height:19px; margin-top:1px; border-radius:6px; border:1.5px solid var(--line);
+    background:var(--paper-raised); cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .check:hover{ border-color:var(--pine); }
+  .check svg{ display:none; width:11px; height:11px; stroke:white; }
+  .item-text{ flex:1; min-width:0; font-size:14.5px; font-weight:500; line-height:1.4; word-break:break-word; outline:none; padding-top:1px; }
+  .del{ flex-shrink:0; opacity:0; background:none; border:none; cursor:pointer; color:var(--muted); padding:3px; border-radius:6px; }
+  li.item:hover .del{ opacity:1; }
+  .del:hover{ background:var(--coral-soft); color:var(--coral); }
+
+  .loading-state{ text-align:center; padding:60px 20px; color:var(--muted); font-size:13.5px; }
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:var(--paper); font-size:13px; font-weight:500; padding:10px 16px;
+    border-radius:8px; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:10;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>주간 할일</h1>
+      <div class="today-line" id="todayLine"></div>
+    </div>
+    <div class="sync-dot" id="syncDot"><span class="dot"></span><span id="syncLabel">동기화됨</span></div>
+  </header>
+
+  <div id="mainContent">
+    <div class="loading-state" id="loadingState">불러오는 중…</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const API = '/api/todos';
+  const DOW = ['일','월','화','수','목','금','토'];
+
+  let todos = [];
+  let days = [];
+  let currentTodayIso = '';
+  let selOffset = 0;
+  let selSlot = 'before';
+  let loaded = false;
+
+  const mainContent = document.getElementById('mainContent');
+  const todayLine = document.getElementById('todayLine');
+  const toastEl = document.getElementById('toast');
+  const syncDot = document.getElementById('syncDot');
+  const syncLabel = document.getElementById('syncLabel');
+
+  function pad(n){ return n < 10 ? '0'+n : ''+n; }
+  function toIso(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function isoAtOffset(base, offset){ return new Date(base.getFullYear(), base.getMonth(), base.getDate() + offset); }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function buildDays(){
+    const now = new Date();
+    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    currentTodayIso = toIso(base);
+    days = [];
+    for(let i=0;i<7;i++){
+      const d = isoAtOffset(base, i);
+      const dow = d.getDay();
+      days.push({
+        iso: toIso(d), dow, isWeekend: dow===0 || dow===6,
+        dayName: DOW[dow], dateLabel: (d.getMonth()+1)+'/'+d.getDate(),
+        isToday: i===0, offset: i
+      });
+    }
+  }
+
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(()=> toastEl.classList.remove('show'), 1600);
+  }
+
+  function setSync(state){
+    syncDot.className = 'sync-dot' + (state==='offline' ? ' offline' : state==='syncing' ? ' syncing' : '');
+    syncLabel.textContent = state==='offline' ? '저장 실패 · 재시도 필요' : state==='syncing' ? '저장 중…' : '동기화됨';
+  }
+
+  async function loadRemote(){
+    const res = await fetch(API, { cache: 'no-store' });
+    if(!res.ok) throw new Error('load failed');
+    return res.json();
+  }
+
+  let saveTimer=null, saveInFlight=false, savePending=false;
+  function persist(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(doSave, 150);
+  }
+  async function doSave(){
+    if(saveInFlight){ savePending = true; return; }
+    saveInFlight = true;
+    setSync('syncing');
+    try{
+      const res = await fetch(API, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(todos)
+      });
+      if(!res.ok) throw new Error('save failed');
+      setSync('ok');
+    }catch(e){
+      setSync('offline');
+      showToast('저장에 실패했어요. 인터넷 연결을 확인해주세요.');
+    }finally{
+      saveInFlight = false;
+      if(savePending){ savePending = false; doSave(); }
+    }
+  }
+
+  function slotLabel(slot){ if(slot==='before') return '출근전'; if(slot==='after') return '퇴근후'; return '하루'; }
+  function dayLabelFor(iso){
+    const day = days.find(d=>d.iso===iso);
+    if(day) return day.dayName+' '+day.dateLabel;
+    const d = new Date(iso+'T00:00:00');
+    return DOW[d.getDay()]+' '+(d.getMonth()+1)+'/'+d.getDate();
+  }
+
+  function buildLayout(){
+    mainContent.innerHTML =
+      '<div id="overduePanel"></div>' +
+      '<div class="add-panel">' +
+        '<input type="text" id="addInput" placeholder="할일을 입력하고 Enter" autocomplete="off">' +
+        '<div class="pill-row" id="datePills"></div>' +
+        '<div class="slot-row" id="slotRow"></div>' +
+        '<button class="add-btn" id="addBtn">추가</button>' +
+      '</div>' +
+      '<div id="daysContainer"></div>';
+  }
+
+  function renderDatePills(){
+    const el = document.getElementById('datePills');
+    el.innerHTML = '';
+    days.forEach(day=>{
+      const btn = document.createElement('button');
+      btn.className = 'pill' + (day.isToday?' today':'') + (day.offset===selOffset?' selected':'');
+      btn.textContent = day.isToday ? '오늘' : (day.offset===1 ? '내일 · '+day.dateLabel : day.dayName+' '+day.dateLabel);
+      btn.onclick = ()=>{
+        selOffset = day.offset;
+        const d = days[selOffset];
+        if(d.isWeekend) selSlot = 'weekend';
+        else if(selSlot==='weekend') selSlot = 'before';
+        renderDatePills();
+        renderSlotRow();
+      };
+      el.appendChild(btn);
+    });
+  }
+
+  function renderSlotRow(){
+    const el = document.getElementById('slotRow');
+    el.innerHTML = '';
+    const day = days[selOffset];
+    if(day.isWeekend){
+      const span = document.createElement('span');
+      span.className = 'slot-fixed';
+      span.textContent = '주말 · 하루 종일';
+      el.appendChild(span);
+      selSlot = 'weekend';
+    } else {
+      ['before','after'].forEach(s=>{
+        const btn = document.createElement('button');
+        btn.className = 'slot-btn' + (selSlot===s?' selected':'');
+        btn.textContent = slotLabel(s);
+        btn.onclick = ()=>{ selSlot = s; renderSlotRow(); };
+        el.appendChild(btn);
+      });
+      if(selSlot==='weekend') selSlot = 'before';
+    }
+  }
+
+  function addTodo(){
+    const input = document.getElementById('addInput');
+    const text = input.value.trim();
+    if(!text) return;
+    const day = days[selOffset];
+    todos.push({ id: uid(), text, date: day.iso, slot: day.isWeekend ? 'weekend' : selSlot, createdAt: Date.now() });
+    input.value = '';
+    persist();
+    renderAll();
+    input.focus();
+  }
+
+  function reassignOptions(){
+    const opts = ['<option value="">이동할 날짜 선택</option>'];
+    days.forEach(day=>{
+      if(day.isWeekend){
+        opts.push('<option value="'+day.iso+'|weekend">'+(day.isToday?'오늘 · ':'')+day.dayName+' '+day.dateLabel+' · 하루</option>');
+      } else {
+        opts.push('<option value="'+day.iso+'|before">'+(day.isToday?'오늘 · ':'')+day.dayName+' '+day.dateLabel+' · 출근전</option>');
+        opts.push('<option value="'+day.iso+'|after">'+(day.isToday?'오늘 · ':'')+day.dayName+' '+day.dateLabel+' · 퇴근후</option>');
+      }
+    });
+    return opts.join('');
+  }
+
+  function renderOverdue(){
+    const overduePanel = document.getElementById('overduePanel');
+    const overdue = todos.filter(t => t.date < currentTodayIso);
+    overduePanel.innerHTML = '';
+    if(overdue.length===0) return;
+
+    const panel = document.createElement('div');
+    panel.className = 'overdue-panel';
+    const title = document.createElement('div');
+    title.className = 'overdue-title';
+    title.textContent = '놓친 할일 ' + overdue.length + '개 · 날짜를 다시 정해주세요';
+    panel.appendChild(title);
+
+    overdue.sort((a,b)=> a.date < b.date ? -1 : 1).forEach(t=>{
+      const row = document.createElement('div');
+      row.className = 'overdue-item';
+      row.id = 'item-'+t.id;
+
+      const textWrap = document.createElement('div');
+      textWrap.className = 'overdue-text';
+      textWrap.textContent = t.text;
+      const meta = document.createElement('span');
+      meta.className = 'overdue-meta';
+      meta.textContent = dayLabelFor(t.date) + ' · ' + slotLabel(t.slot);
+      textWrap.appendChild(meta);
+
+      const select = document.createElement('select');
+      select.innerHTML = reassignOptions();
+      select.onchange = ()=>{
+        if(!select.value) return;
+        const [newIso, newSlot] = select.value.split('|');
+        t.date = newIso; t.slot = newSlot;
+        persist(); renderAll();
+        showToast('일정을 옮겼어요');
+      };
+
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.innerHTML = '<svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 3L12 12M12 3L3 12"/></svg>';
+      del.onclick = ()=>{ todos = todos.filter(x=>x.id!==t.id); persist(); renderAll(); };
+
+      row.appendChild(textWrap); row.appendChild(select); row.appendChild(del);
+      panel.appendChild(row);
+    });
+    overduePanel.appendChild(panel);
+  }
+
+  function completeTodo(id){
+    const el = document.getElementById('item-'+id);
+    if(el) el.classList.add('removing');
+    setTimeout(()=>{ todos = todos.filter(x=>x.id!==id); persist(); renderAll(); }, 220);
+  }
+
+  function editTodo(id, newText){
+    const t = todos.find(x=>x.id===id);
+    if(!t) return;
+    const clean = newText.trim();
+    if(!clean){ todos = todos.filter(x=>x.id!==id); persist(); renderAll(); return; }
+    t.text = clean; persist();
+  }
+
+  function makeItemLi(t){
+    const li = document.createElement('li');
+    li.className = 'item';
+    li.id = 'item-'+t.id;
+
+    const check = document.createElement('button');
+    check.className = 'check';
+    check.setAttribute('aria-label','완료');
+    check.innerHTML = '<svg viewBox="0 0 12 12" fill="none"><path d="M2 6.2L4.6 9L10 3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    check.onclick = ()=> completeTodo(t.id);
+
+    const textEl = document.createElement('div');
+    textEl.className = 'item-text';
+    textEl.contentEditable = 'true';
+    textEl.spellcheck = false;
+    textEl.textContent = t.text;
+    textEl.onblur = ()=> editTodo(t.id, textEl.textContent);
+    textEl.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); textEl.blur(); } };
+
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.innerHTML = '<svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 3L12 12M12 3L3 12"/></svg>';
+    del.onclick = ()=>{ todos = todos.filter(x=>x.id!==t.id); persist(); renderAll(); };
+
+    li.appendChild(check); li.appendChild(textEl); li.appendChild(del);
+    return li;
+  }
+
+  function renderSlotBlock(items, label){
+    const wrap = document.createElement('div');
+    wrap.className = 'slot-block';
+    if(label){
+      const lab = document.createElement('div');
+      lab.className = 'slot-label';
+      lab.textContent = label;
+      wrap.appendChild(lab);
+    }
+    if(items.length===0){
+      const empty = document.createElement('div');
+      empty.className = 'slot-empty';
+      empty.textContent = '없음';
+      wrap.appendChild(empty);
+    } else {
+      const ul = document.createElement('ul');
+      ul.className = 'items';
+      items.forEach(t=> ul.appendChild(makeItemLi(t)));
+      wrap.appendChild(ul);
+    }
+    return wrap;
+  }
+
+  function renderDays(){
+    const daysContainer = document.getElementById('daysContainer');
+    daysContainer.innerHTML = '';
+    days.forEach(day=>{
+      const dayTodos = todos.filter(t=> t.date === day.iso);
+      const section = document.createElement('div');
+      section.className = 'day-section' + (day.isToday?' today':'');
+
+      const header = document.createElement('div');
+      header.className = 'day-header';
+      const name = document.createElement('span');
+      name.className = 'day-name';
+      name.textContent = day.dayName+'요일';
+      const date = document.createElement('span');
+      date.className = 'day-date';
+      date.textContent = day.dateLabel;
+      header.appendChild(name); header.appendChild(date);
+      if(day.isToday){
+        const tag = document.createElement('span');
+        tag.className = 'today-tag';
+        tag.textContent = '오늘';
+        header.appendChild(tag);
+      }
+      section.appendChild(header);
+
+      if(day.isWeekend){
+        section.appendChild(renderSlotBlock(dayTodos, null));
+      } else {
+        section.appendChild(renderSlotBlock(dayTodos.filter(t=>t.slot==='before'), '출근전'));
+        section.appendChild(renderSlotBlock(dayTodos.filter(t=>t.slot==='after'), '퇴근후'));
+      }
+      daysContainer.appendChild(section);
+    });
+  }
+
+  function renderAll(){
+    todayLine.textContent = days[0].dayName+'요일 '+days[0].dateLabel+' 기준 · 오늘부터 7일';
+    renderDatePills();
+    renderSlotRow();
+    renderOverdue();
+    renderDays();
+  }
+
+  async function init(){
+    buildDays();
+    try{
+      todos = await loadRemote();
+    }catch(e){
+      todos = [];
+      setSync('offline');
+      showToast('목록을 불러오지 못했어요. 새로고침해보세요.');
+    }
+    buildLayout();
+    document.getElementById('addBtn').addEventListener('click', addTodo);
+    document.getElementById('addInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addTodo(); });
+    renderAll();
+    loaded = true;
+  }
+
+  setInterval(()=>{
+    const now = new Date();
+    const iso = toIso(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+    if(iso !== currentTodayIso){ buildDays(); if(selOffset>=7) selOffset=0; renderAll(); }
+  }, 60000);
+  document.addEventListener('visibilitychange', async ()=>{
+    if(document.visibilityState==='visible' && loaded){
+      const now = new Date();
+      const iso = toIso(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+      if(iso !== currentTodayIso){ buildDays(); renderAll(); }
+      try{ todos = await loadRemote(); renderAll(); setSync('ok'); }
+      catch(e){ setSync('offline'); }
+    }
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>
