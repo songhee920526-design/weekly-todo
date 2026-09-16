@@ -89,6 +89,12 @@
   }
   .add-panel input[type=text]::placeholder{ color:var(--muted); font-weight:450; }
   .add-panel input[type=text]:focus{ border-bottom-color:var(--pine); }
+  .recur-toggle{
+    display:block; width:100%; margin-top:10px; font-family:inherit; font-size:12.5px; font-weight:600;
+    color:var(--muted); background:var(--paper); border:1px solid var(--line); border-radius:8px;
+    padding:8px 10px; cursor:pointer; text-align:center;
+  }
+  .recur-toggle.on{ background:var(--pine-soft); border-color:var(--pine); color:var(--pine); }
 
   .pill-row{ display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; margin-bottom:10px; scrollbar-width:none; }
   .pill-row::-webkit-scrollbar{ display:none; }
@@ -177,10 +183,12 @@
   const DOW = ['일','월','화','수','목','금','토'];
 
   let todos = [];
+  let history = {}; // { normalizedText: [{date, slot}, ...] } — completion history for recurring detection
   let days = [];
   let currentTodayIso = '';
   let selOffset = 0;
   let selSlot = 'before';
+  let selRecurring = false;
   let loaded = false;
 
   const mainContent = document.getElementById('mainContent');
@@ -241,7 +249,7 @@
       const res = await fetch(API, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(todos)
+        body: JSON.stringify({ todos, history })
       });
       if(!res.ok) throw new Error('save failed');
       setSync('ok');
@@ -255,6 +263,63 @@
   }
 
   function slotLabel(slot){ if(slot==='before') return '출근전'; if(slot==='after') return '퇴근후'; return '하루'; }
+
+  /* ---------- 주기적 할일 자동 생성 ---------- */
+  function normText(s){ return (s||'').trim(); }
+
+  function recordCompletion(text, date, slot){
+    const key = normText(text);
+    if(!key) return;
+    if(!history[key]) history[key] = [];
+    history[key].push({ date, slot });
+    if(history[key].length > 30) history[key] = history[key].slice(-30); // 무한정 쌓이지 않게 최근 30건만
+  }
+
+  function addDaysIso(iso, n){
+    const d = new Date(iso+'T00:00:00');
+    d.setDate(d.getDate() + Math.round(n));
+    return toIso(d);
+  }
+
+  function computeAvgIntervalDays(entries){
+    if(entries.length < 2) return null;
+    const sorted = entries.slice().sort((a,b)=> a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    let total = 0, count = 0;
+    for(let i=1;i<sorted.length;i++){
+      const d1 = new Date(sorted[i-1].date+'T00:00:00');
+      const d2 = new Date(sorted[i].date+'T00:00:00');
+      const diff = Math.round((d2-d1)/86400000);
+      if(diff > 0){ total += diff; count++; }
+    }
+    if(count === 0) return null;
+    return total / count; // 실행 횟수가 쌓일수록 이 평균이 점점 그 사람 패턴에 맞게 다듬어짐
+  }
+
+  // 완료 기록이 2번 이상 쌓인 항목은, 평균 주기를 계산해 다음 할일을 자동으로 미리 만들어둠
+  function autoGenerateRecurring(){
+    let changed = false;
+    Object.keys(history).forEach(key=>{
+      const entries = history[key];
+      if(!entries || entries.length < 2) return;
+      const avg = computeAvgIntervalDays(entries);
+      if(!avg || avg <= 0) return;
+      const sorted = entries.slice().sort((a,b)=> a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+      const last = sorted[sorted.length-1];
+      const alreadyPending = todos.some(t => normText(t.text)===key && t.date >= last.date);
+      if(alreadyPending) return;
+      todos.push({
+        id: uid(),
+        text: key,
+        date: addDaysIso(last.date, avg),
+        slot: last.slot || 'before',
+        createdAt: Date.now(),
+        recurring: true,
+        isRecurringType: true
+      });
+      changed = true;
+    });
+    return changed;
+  }
   function dayLabelFor(iso){
     const day = days.find(d=>d.iso===iso);
     if(day) return day.dayName+' '+day.dateLabel;
@@ -269,9 +334,16 @@
         '<input type="text" id="addInput" placeholder="할일을 입력하고 Enter" autocomplete="off">' +
         '<div class="pill-row" id="datePills"></div>' +
         '<div class="slot-row" id="slotRow"></div>' +
+        '<button class="recur-toggle" id="recurToggle" type="button">🔁 반복되는 일이에요</button>' +
         '<button class="add-btn" id="addBtn">추가</button>' +
       '</div>' +
       '<div id="daysContainer"></div>';
+
+    const recurBtn = document.getElementById('recurToggle');
+    recurBtn.onclick = ()=>{
+      selRecurring = !selRecurring;
+      recurBtn.classList.toggle('on', selRecurring);
+    };
   }
 
   function renderDatePills(){
@@ -320,8 +392,16 @@
     const text = input.value.trim();
     if(!text) return;
     const day = days[selOffset];
-    todos.push({ id: uid(), text, date: day.iso, slot: day.isWeekend ? 'weekend' : selSlot, createdAt: Date.now() });
+    todos.push({
+      id: uid(), text, date: day.iso,
+      slot: day.isWeekend ? 'weekend' : selSlot,
+      createdAt: Date.now(),
+      isRecurringType: selRecurring
+    });
     input.value = '';
+    selRecurring = false;
+    const recurBtn = document.getElementById('recurToggle');
+    if(recurBtn) recurBtn.classList.remove('on');
     persist();
     renderAll();
     input.focus();
@@ -390,7 +470,15 @@
   function completeTodo(id){
     const el = document.getElementById('item-'+id);
     if(el) el.classList.add('removing');
-    setTimeout(()=>{ todos = todos.filter(x=>x.id!==id); persist(); renderAll(); }, 220);
+    setTimeout(()=>{
+      const t = todos.find(x=>x.id===id);
+      const wasRecurring = t && t.isRecurringType;
+      if(wasRecurring) recordCompletion(t.text, t.date, t.slot);
+      todos = todos.filter(x=>x.id!==id);
+      if(wasRecurring) autoGenerateRecurring();
+      persist();
+      renderAll();
+    }, 220);
   }
 
   function editTodo(id, newText){
@@ -425,7 +513,21 @@
     del.innerHTML = '<svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 3L12 12M12 3L3 12"/></svg>';
     del.onclick = ()=>{ todos = todos.filter(x=>x.id!==t.id); persist(); renderAll(); };
 
-    li.appendChild(check); li.appendChild(textEl); li.appendChild(del);
+    li.appendChild(check);
+    if(t.recurring){
+      const badge = document.createElement('span');
+      badge.textContent = '🔁';
+      badge.title = '완료 기록을 바탕으로 자동 생성된 할일이에요';
+      badge.style.cssText = 'font-size:12px; margin-top:2px; flex-shrink:0;';
+      li.appendChild(badge);
+    } else if(t.isRecurringType){
+      const badge = document.createElement('span');
+      badge.textContent = '🔁';
+      badge.title = '반복 할일로 표시됨 · 완료 기록이 쌓이면 주기를 계산해 자동으로 다음 할일이 생겨요';
+      badge.style.cssText = 'font-size:12px; margin-top:2px; flex-shrink:0; opacity:0.45;';
+      li.appendChild(badge);
+    }
+    li.appendChild(textEl); li.appendChild(del);
     return li;
   }
 
@@ -498,12 +600,15 @@
   async function init(){
     buildDays();
     try{
-      todos = await loadRemote();
+      const raw = await loadRemote();
+      if(Array.isArray(raw)){ todos = raw; history = {}; } // 예전 형식(배열)과의 호환
+      else { todos = raw.todos || []; history = raw.history || {}; }
     }catch(e){
-      todos = [];
+      todos = []; history = {};
       setSync('offline');
       showToast('목록을 불러오지 못했어요. 새로고침해보세요.');
     }
+    if(autoGenerateRecurring()) persist();
     buildLayout();
     document.getElementById('addBtn').addEventListener('click', addTodo);
     document.getElementById('addInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addTodo(); });
@@ -521,7 +626,12 @@
       const now = new Date();
       const iso = toIso(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
       if(iso !== currentTodayIso){ buildDays(); renderAll(); }
-      try{ todos = await loadRemote(); renderAll(); setSync('ok'); }
+      try{
+        const raw = await loadRemote();
+        if(Array.isArray(raw)){ todos = raw; } else { todos = raw.todos || []; history = raw.history || history; }
+        if(autoGenerateRecurring()) persist();
+        renderAll(); setSync('ok');
+      }
       catch(e){ setSync('offline'); }
     }
   });
