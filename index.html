@@ -7,9 +7,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="주간 할일">
-<meta name="theme-color" content="#F6F5F0">
+<meta name="theme-color" content="#FBF3E2">
 <link rel="apple-touch-icon" href="/diary_v2_cool.png">
 <link rel="icon" href="/diary_v2_cool.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   @font-face {
     font-family: 'LeeSeoyun';
@@ -19,16 +21,18 @@
     font-display: swap;
   }
   :root{
-    --paper:#F6F5F0;
-    --paper-raised:#FBFAF7;
-    --ink:#22262B;
-    --ink-soft:#4B5158;
-    --muted:#9AA098;
-    --line:#DEDCD2;
-    --pine:#3B6255;
-    --pine-soft:#E4ECE7;
+    --paper:#FBF3E2;
+    --paper-raised:#FFFDF7;
+    --ink:#232A3D;
+    --ink-soft:#52597A;
+    --muted:#A89A80;
+    --line:#E7D9C0;
+    --rule:#2C3A66;
+    --rule-soft:#E3E7F0;
+    --red:#D6492F;
+    --red-soft:#F7E1DA;
     --gold:#B9932F;
-    --gold-soft:#F3ECDA;
+    --gold-soft:#F6ECD8;
     --coral:#B5533E;
     --coral-soft:#F3E4E0;
   }
@@ -45,9 +49,20 @@
   }
   .app{ width:100%; max-width:600px; }
 
-  header{ margin-bottom:24px; display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
-  h1{ font-size:21px; font-weight:650; letter-spacing:-0.01em; margin:0 0 3px; }
-  .today-line{ font-size:13px; color:var(--muted); font-weight:500; }
+  header{
+    margin-bottom:24px; padding-bottom:14px; display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    border-bottom:3px double var(--rule);
+  }
+  h1{
+    font-family:'Noto Serif KR',serif; font-size:27px; font-weight:900; letter-spacing:-0.01em;
+    margin:0 0 4px; color:var(--red);
+  }
+  .today-line{ font-size:13px; color:var(--ink-soft); font-weight:500; }
+  .header-right{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+  .icon-btn{
+    width:30px; height:30px; border-radius:9px; border:1px solid var(--line);
+    background:var(--paper-raised); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
   .sync-dot{
     font-size:11px;
     font-weight:600;
@@ -57,7 +72,7 @@
     gap:5px;
     white-space:nowrap;
   }
-  .sync-dot .dot{ width:6px; height:6px; border-radius:50%; background:var(--pine); }
+  .sync-dot .dot{ width:6px; height:6px; border-radius:50%; background:var(--rule); }
   .sync-dot.offline .dot{ background:var(--coral); }
   .sync-dot.syncing .dot{ background:var(--gold); }
 
@@ -88,13 +103,13 @@
     outline:none; margin-bottom:12px;
   }
   .add-panel input[type=text]::placeholder{ color:var(--muted); font-weight:450; }
-  .add-panel input[type=text]:focus{ border-bottom-color:var(--pine); }
+  .add-panel input[type=text]:focus{ border-bottom-color:var(--red); }
   .recur-toggle{
     display:block; width:100%; margin-top:10px; font-family:inherit; font-size:12.5px; font-weight:600;
     color:var(--muted); background:var(--paper); border:1px solid var(--line); border-radius:8px;
     padding:8px 10px; cursor:pointer; text-align:center;
   }
-  .recur-toggle.on{ background:var(--pine-soft); border-color:var(--pine); color:var(--pine); }
+  .recur-toggle.on{ background:var(--red-soft); border-color:var(--red); color:var(--red); }
 
   .pill-row{ display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; margin-bottom:10px; scrollbar-width:none; }
   .pill-row::-webkit-scrollbar{ display:none; }
@@ -103,8 +118,8 @@
     background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:7px 11px;
     cursor:pointer; white-space:nowrap; transition:background .12s ease, color .12s ease, border-color .12s ease;
   }
-  .pill.today{ color:var(--pine); }
-  .pill.selected{ background:var(--pine); border-color:var(--pine); color:#fff; }
+  .pill.today{ color:var(--red); }
+  .pill.selected{ background:var(--red); border-color:var(--red); color:#fff; }
 
   .slot-row{ display:flex; gap:6px; align-items:center; }
   .slot-btn{
@@ -116,18 +131,18 @@
 
   .add-btn{
     display:block; width:100%; margin-top:12px; font-family:inherit; font-size:14px; font-weight:650;
-    color:#fff; background:var(--pine); border:none; border-radius:8px; padding:11px; cursor:pointer;
+    color:#fff; background:var(--red); border:none; border-radius:8px; padding:11px; cursor:pointer;
   }
   .add-btn:active{ opacity:.85; }
   .add-btn:disabled{ opacity:.5; cursor:default; }
 
   .day-section{ margin-bottom:22px; }
-  .day-header{ display:flex; align-items:baseline; gap:8px; margin-bottom:8px; padding-bottom:6px; border-bottom:1.5px solid var(--line); }
-  .day-section.today .day-header{ border-bottom-color:var(--pine); }
-  .day-name{ font-size:14.5px; font-weight:650; }
-  .day-section.today .day-name{ color:var(--pine); }
+  .day-header{ display:flex; align-items:baseline; gap:8px; margin-bottom:8px; padding-bottom:6px; border-bottom:1.5px solid var(--rule-soft); }
+  .day-section.today .day-header{ border-bottom-color:var(--red); }
+  .day-name{ font-family:'Noto Serif KR',serif; font-size:15.5px; font-weight:700; color:var(--rule); }
+  .day-section.today .day-name{ color:var(--red); }
   .day-date{ font-size:12.5px; color:var(--muted); font-weight:500; }
-  .today-tag{ font-size:10.5px; font-weight:650; color:#fff; background:var(--pine); border-radius:5px; padding:1px 6px; margin-left:auto; }
+  .today-tag{ font-size:10.5px; font-weight:650; color:#fff; background:var(--red); border-radius:5px; padding:1px 6px; margin-left:auto; }
 
   .slot-block{ margin-bottom:4px; }
   .slot-label{ font-size:11.5px; font-weight:650; color:var(--muted); margin:10px 0 4px 2px; }
@@ -140,10 +155,10 @@
   }
   li.item.removing{ opacity:0; transform:translateX(6px); max-height:0; padding-top:0; padding-bottom:0; overflow:hidden; }
   .check{
-    flex-shrink:0; width:19px; height:19px; margin-top:1px; border-radius:6px; border:1.5px solid var(--line);
+    flex-shrink:0; width:19px; height:19px; margin-top:1px; border-radius:50%; border:1.6px solid var(--rule);
     background:var(--paper-raised); cursor:pointer; display:flex; align-items:center; justify-content:center;
   }
-  .check:hover{ border-color:var(--pine); }
+  .check:hover{ border-color:var(--red); }
   .check svg{ display:none; width:11px; height:11px; stroke:white; }
   .item-text{ flex:1; min-width:0; font-size:14.5px; font-weight:500; line-height:1.4; word-break:break-word; outline:none; padding-top:1px; }
   .del{ flex-shrink:0; opacity:0; background:none; border:none; cursor:pointer; color:var(--muted); padding:3px; border-radius:6px; }
@@ -156,7 +171,7 @@
     background:none; border:none; cursor:pointer; color:var(--muted); padding:0; border-radius:6px;
     display:flex; align-items:center; justify-content:center;
   }
-  .act:hover{ background:var(--pine-soft); color:var(--pine); }
+  .act:hover{ background:var(--rule-soft); color:var(--rule); }
   .act svg{ pointer-events:none; }
   .act select{
     position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;
@@ -164,6 +179,31 @@
   }
 
   .loading-state{ text-align:center; padding:60px 20px; color:var(--muted); font-size:13.5px; }
+
+  .sheet-overlay{
+    position:fixed; inset:0; background:rgba(35,42,61,0.38);
+    display:none; align-items:flex-end; justify-content:center; z-index:30;
+  }
+  .sheet-overlay.show{ display:flex; }
+  .sheet{
+    background:var(--paper); width:100%; max-width:600px;
+    border-radius:18px 18px 0 0; padding:20px 18px calc(24px + env(safe-area-inset-bottom));
+    max-height:80vh; overflow-y:auto;
+  }
+  .sheet h3{ font-family:'Noto Serif KR',serif; font-size:18px; font-weight:900; color:var(--red); margin:0 0 14px; }
+  .btn{
+    flex:1; font-family:inherit; font-size:14px; font-weight:650; padding:12px;
+    border-radius:10px; border:none; cursor:pointer;
+  }
+  .btn.ghost{ background:var(--paper-raised); color:var(--ink-soft); border:1.5px solid var(--line); }
+  .sheet-btns{ display:flex; gap:8px; margin-top:18px; }
+
+  .cycle-empty{ font-size:13px; color:var(--muted); padding:16px 2px; text-align:center; }
+  .cycle-row{ padding:12px 2px; border-bottom:1px solid var(--line); }
+  .cycle-row:last-child{ border-bottom:none; }
+  .cycle-title{ font-size:14.5px; font-weight:650; color:var(--ink); margin-bottom:3px; }
+  .cycle-meta{ font-size:12px; color:var(--ink-soft); }
+  .cycle-next{ font-size:11.5px; color:var(--muted); margin-top:3px; }
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--ink); color:var(--paper); font-size:13px; font-weight:500; padding:10px 16px;
@@ -180,11 +220,29 @@
       <h1>주간 할일</h1>
       <div class="today-line" id="todayLine"></div>
     </div>
-    <div class="sync-dot" id="syncDot"><span class="dot"></span><span id="syncLabel">동기화됨</span></div>
+    <div class="header-right">
+      <button class="icon-btn" id="cycleBtn" title="반복 주기 보기" type="button">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <path d="M20 11A8 8 0 1 0 18.3 16" stroke="var(--rule)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M20 5v6h-6" stroke="var(--rule)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="sync-dot" id="syncDot"><span class="dot"></span><span id="syncLabel">동기화됨</span></div>
+    </div>
   </header>
 
   <div id="mainContent">
     <div class="loading-state" id="loadingState">불러오는 중…</div>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="cycleOverlay">
+  <div class="sheet">
+    <h3>반복 주기 보기</h3>
+    <div id="cycleList"></div>
+    <div class="sheet-btns">
+      <button class="btn ghost" id="cycleClose" type="button">닫기</button>
+    </div>
   </div>
 </div>
 
@@ -290,7 +348,7 @@
 
   function addDaysIso(iso, n){
     const d = new Date(iso+'T00:00:00');
-    d.setDate(d.getDate() + Math.round(n));
+    d.setDate(d.getDate() + Math.floor(n));
     return toIso(d);
   }
 
@@ -308,31 +366,113 @@
     return total / count; // 실행 횟수가 쌓일수록 이 평균이 점점 그 사람 패턴에 맞게 다듬어짐
   }
 
-  // 완료 기록이 2번 이상 쌓인 항목은, 평균 주기를 계산해 다음 할일을 자동으로 미리 만들어둠
-  function autoGenerateRecurring(){
-    let changed = false;
-    Object.keys(history).forEach(key=>{
-      const entries = history[key];
-      if(!entries || entries.length < 2) return;
-      const avg = computeAvgIntervalDays(entries);
-      if(!avg || avg <= 0) return;
-      const sorted = entries.slice().sort((a,b)=> a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
-      const last = sorted[sorted.length-1];
-      const alreadyPending = todos.some(t => normText(t.text)===key && t.date >= last.date);
-      if(alreadyPending) return;
+  // 평균 주기(소수점 포함)를 정수 일수로 바꿈. 소수점은 내림 처리해서 다음 할일이 더 빨리 돌아오게 함. 최소 1일.
+  function flooredInterval(avg){ return Math.max(1, Math.floor(avg)); }
+
+  const GEN_HORIZON_DAYS = 90;  // 앞으로 최대 몇 일치까지 미리 만들어둘지
+  const GEN_MAX_COUNT = 24;     // 한 항목당 최대 몇 개까지 미리 만들어둘지
+
+  // anchor(마지막 완료일)로부터 interval 간격으로 미래 날짜들을 쭉 뽑아줌
+  function desiredSeries(anchorIso, interval){
+    const dates = [];
+    let cursor = anchorIso;
+    const anchorTime = new Date(anchorIso+'T00:00:00').getTime();
+    for(let i=0; i<GEN_MAX_COUNT; i++){
+      cursor = addDaysIso(cursor, interval);
+      const diffFromAnchor = Math.round((new Date(cursor+'T00:00:00').getTime() - anchorTime) / 86400000);
+      if(diffFromAnchor > GEN_HORIZON_DAYS) break;
+      dates.push(cursor);
+    }
+    return dates;
+  }
+
+  // 완료 기록이 2번 이상 쌓인 항목의 예정 일정을 최신 상태로 맞춤.
+  // - 주기(간격)가 바뀌었으면: 이미 만들어둔 예정 일정을 전부 지우고 새 주기로 다시 생성 (자동 수정)
+  // - 주기는 그대로인데 예정이 얼마 안 남았으면: 모자란 만큼만 더 채워 넣음 (기존 건 안 건드림)
+  function regenerateSeriesFor(key){
+    const entries = history[key];
+    if(!entries || entries.length < 2) return false;
+    const avg = computeAvgIntervalDays(entries);
+    if(!avg || avg <= 0) return false;
+    const interval = flooredInterval(avg);
+    const sorted = entries.slice().sort((a,b)=> a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    const last = sorted[sorted.length-1];
+
+    let existing = todos.filter(t=> t.recurring && normText(t.text)===key);
+    const cycleChanged = existing.length>0 && existing.some(t=> t.cycleDays !== interval);
+
+    if(cycleChanged){
+      todos = todos.filter(t=> !(t.recurring && normText(t.text)===key));
+      existing = [];
+    }
+
+    if(!cycleChanged && existing.length >= 3) return false; // 주기도 그대로고 예정도 충분히 있음
+
+    const existingDates = new Set(existing.map(t=>t.date));
+    const desired = desiredSeries(last.date, interval);
+    let added = false;
+    desired.forEach(dateIso=>{
+      if(existingDates.has(dateIso)) return;
       todos.push({
         id: uid(),
         text: key,
-        date: addDaysIso(last.date, avg),
+        date: dateIso,
         slot: last.slot || 'before',
         createdAt: Date.now(),
         recurring: true,
-        isRecurringType: true
+        isRecurringType: true,
+        cycleDays: interval
       });
-      changed = true;
+      added = true;
+    });
+    return cycleChanged || added;
+  }
+
+  function autoGenerateRecurring(){
+    let changed = false;
+    Object.keys(history).forEach(key=>{
+      if(regenerateSeriesFor(key)) changed = true;
     });
     return changed;
   }
+  function escapeHtml(s){
+    return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function allRecurringKeys(){
+    const keys = new Set();
+    Object.keys(history).forEach(k=> keys.add(k));
+    todos.filter(t=>t.isRecurringType).forEach(t=> keys.add(normText(t.text)));
+    return [...keys].filter(Boolean);
+  }
+
+  function buildCycleList(){
+    const wrap = document.getElementById('cycleList');
+    const keys = allRecurringKeys().sort((a,b)=> a.localeCompare(b,'ko'));
+    if(keys.length===0){
+      wrap.innerHTML = '<div class="cycle-empty">아직 반복으로 표시한 할일이 없어요.</div>';
+      return;
+    }
+    let html = '';
+    keys.forEach(key=>{
+      const entries = history[key] || [];
+      const avg = computeAvgIntervalDays(entries);
+      const interval = avg ? flooredInterval(avg) : null;
+      const upcoming = todos.filter(t=> t.recurring && normText(t.text)===key).map(t=>t.date).sort();
+      html += '<div class="cycle-row">' +
+        '<div class="cycle-title">'+escapeHtml(key)+'</div>' +
+        '<div class="cycle-meta">' +
+          (interval!==null ? ('주기 '+interval+'일마다') : '완료 기록 부족 · 2번 이상 완료해야 주기가 계산돼요') +
+          (entries.length ? (' · 완료 '+entries.length+'번') : '') +
+        '</div>' +
+        (upcoming.length
+          ? ('<div class="cycle-next">다음 예정 '+dayLabelFor(upcoming[0])+' · 앞으로 '+upcoming.length+'개 예약됨</div>')
+          : '') +
+      '</div>';
+    });
+    wrap.innerHTML = html;
+  }
+
   function dayLabelFor(iso){
     const day = days.find(d=>d.iso===iso);
     if(day) return day.dayName+' '+day.dateLabel;
@@ -654,6 +794,17 @@
     renderOverdue();
     renderDays();
   }
+
+  document.getElementById('cycleBtn').onclick = ()=>{
+    buildCycleList();
+    document.getElementById('cycleOverlay').classList.add('show');
+  };
+  document.getElementById('cycleClose').onclick = ()=>{
+    document.getElementById('cycleOverlay').classList.remove('show');
+  };
+  document.getElementById('cycleOverlay').onclick = (e)=>{
+    if(e.target.id==='cycleOverlay') e.currentTarget.classList.remove('show');
+  };
 
   async function init(){
     buildDays();
