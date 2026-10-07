@@ -160,7 +160,8 @@
   }
   .check:hover{ border-color:var(--red); }
   .check svg{ display:none; width:11px; height:11px; stroke:white; }
-  .item-text{ flex:1; min-width:0; font-size:14.5px; font-weight:500; line-height:1.4; word-break:break-word; outline:none; padding-top:1px; }
+  .item-text{ flex:1; min-width:0; font-size:14.5px; font-weight:500; line-height:1.4; word-break:break-word; outline:none; padding-top:1px; border-radius:4px; transition:background .12s ease; }
+  .item-text:focus{ background:var(--rule-soft); box-shadow:0 0 0 2px var(--rule-soft); }
   .del{ flex-shrink:0; opacity:0; background:none; border:none; cursor:pointer; color:var(--muted); padding:3px; border-radius:6px; }
   li.item:hover .del{ opacity:1; }
   .del:hover{ background:var(--coral-soft); color:var(--coral); }
@@ -697,6 +698,14 @@
     };
     moveWrap.appendChild(moveSel);
 
+    // 미루기 버튼: 출근전→퇴근후(같은 날), 퇴근후→다음날 출근전으로 한 칸 밀기
+    const postponeBtn = document.createElement('button');
+    postponeBtn.className = 'act';
+    postponeBtn.title = '다음 시간대로 미루기';
+    postponeBtn.setAttribute('aria-label','미루기');
+    postponeBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5 5-5 5"/><path d="M8.3 3l5 5-5 5"/></svg>';
+    postponeBtn.onclick = ()=> postponeTodo(t.id);
+
     // 복사 버튼: 바로 다음날에 같은 할일을 추가
     const copyBtn = document.createElement('button');
     copyBtn.className = 'act';
@@ -705,8 +714,26 @@
     copyBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5.4" y="5.4" width="8.4" height="8.4" rx="2"/><path d="M10.6 5.4V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4.6a2 2 0 0 0 2 2h1.4"/></svg>';
     copyBtn.onclick = ()=> copyToNextDay(t.id);
 
-    li.appendChild(textEl); li.appendChild(moveWrap); li.appendChild(copyBtn); li.appendChild(del);
+    li.appendChild(textEl); li.appendChild(moveWrap); li.appendChild(postponeBtn); li.appendChild(copyBtn); li.appendChild(del);
     return li;
+  }
+
+  // 출근전 일정이면 같은 날 퇴근후로, 퇴근후(또는 주말) 일정이면 다음날로 한 칸 밀어줌
+  function postponeTodo(id){
+    const t = todos.find(x=>x.id===id);
+    if(!t) return;
+    let newDate = t.date, newSlot;
+    if(t.slot === 'before'){
+      newSlot = 'after';
+    } else {
+      newDate = addDaysIso(t.date, 1);
+      const nd = new Date(newDate+'T00:00:00');
+      const isWeekend = nd.getDay()===0 || nd.getDay()===6;
+      newSlot = isWeekend ? 'weekend' : 'before';
+    }
+    t.date = newDate; t.slot = newSlot;
+    persist(); renderAll();
+    showToast(dayLabelFor(newDate)+' · '+slotLabel(newSlot)+'로 미뤘어요');
   }
 
   function copyToNextDay(id){
