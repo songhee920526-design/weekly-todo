@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>주간 할일</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -86,15 +86,14 @@
   .overdue-title{ font-size:13px; font-weight:650; color:#8A6A1E; margin-bottom:8px; }
   .overdue-item{ display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid #E9DCB2; }
   .overdue-item:first-of-type{ border-top:none; }
-  .overdue-text{ flex:1; min-width:0; font-size:14.5px; font-weight:500; line-height:1.4; }
-  .overdue-meta{ display:block; font-size:11px; color:#93762C; margin-top:2px; font-weight:500; }
+  .overdue-text{ flex:1; min-width:0; font-size:16.5px; font-weight:500; line-height:1.4; }
+  .overdue-meta{ display:block; font-size:12px; color:#93762C; margin-top:2px; font-weight:500; }
   .overdue-item select{
     font-family:inherit; font-size:12.5px; font-weight:600; color:var(--ink);
     background:var(--paper-raised); border:1px solid var(--line); border-radius:7px;
     padding:6px 8px; max-width:118px; cursor:pointer;
   }
   .overdue-item .del{ flex-shrink:0; background:none; border:none; color:#93762C; cursor:pointer; padding:4px; border-radius:6px; opacity:.7; }
-  .overdue-item .del:hover{ background:var(--coral-soft); color:var(--coral); opacity:1; }
 
   .add-panel{ background:var(--paper-raised); border:1.5px solid var(--line); border-radius:12px; padding:14px; margin-bottom:30px; }
   .add-panel input[type=text]{
@@ -146,25 +145,22 @@
 
   .slot-block{ margin-bottom:4px; }
   .slot-label{ font-size:11.5px; font-weight:650; color:var(--muted); margin:10px 0 4px 2px; }
-  .slot-empty{ font-size:12.5px; color:var(--muted); padding:6px 2px; opacity:.7; }
+  .slot-empty{ font-size:13.5px; color:var(--muted); padding:6px 2px; opacity:.7; }
 
   ul.items{ list-style:none; margin:0; padding:0; }
   li.item{
     display:flex; align-items:flex-start; gap:11px; padding:9px 2px; border-radius:8px;
-    transition:opacity .22s ease, transform .22s ease, max-height .22s ease; max-height:80px;
+    transition:opacity .22s ease, transform .22s ease, max-height .22s ease; max-height:160px;
   }
   li.item.removing{ opacity:0; transform:translateX(6px); max-height:0; padding-top:0; padding-bottom:0; overflow:hidden; }
   .check{
     flex-shrink:0; width:19px; height:19px; margin-top:1px; border-radius:50%; border:1.6px solid var(--rule);
     background:var(--paper-raised); cursor:pointer; display:flex; align-items:center; justify-content:center;
   }
-  .check:hover{ border-color:var(--red); }
   .check svg{ display:none; width:11px; height:11px; stroke:white; }
-  .item-text{ flex:1; min-width:0; font-size:14.5px; font-weight:500; line-height:1.4; word-break:break-word; outline:none; padding-top:1px; border-radius:4px; transition:background .12s ease; }
+  .item-text{ flex:1; min-width:0; font-size:16.5px; font-weight:500; line-height:1.4; word-break:break-word; outline:none; padding-top:1px; border-radius:4px; transition:background .12s ease; }
   .item-text:focus{ background:var(--rule-soft); box-shadow:0 0 0 2px var(--rule-soft); }
   .del{ flex-shrink:0; opacity:0; background:none; border:none; cursor:pointer; color:var(--muted); padding:3px; border-radius:6px; }
-  li.item:hover .del{ opacity:1; }
-  .del:hover{ background:var(--coral-soft); color:var(--coral); }
 
   /* 이동 / 복사 버튼 (폰에서도 보이도록 항상 표시) */
   .act{
@@ -172,12 +168,26 @@
     background:none; border:none; cursor:pointer; color:var(--muted); padding:0; border-radius:6px;
     display:flex; align-items:center; justify-content:center;
   }
-  .act:hover{ background:var(--rule-soft); color:var(--rule); }
   .act svg{ pointer-events:none; }
   .act select{
     position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;
     font-size:16px; border:none; background:transparent;
   }
+
+
+  /* 마우스가 있는 기기에서만 hover 효과 적용 (폰에서는 첫 터치가 hover로 먹혀 두 번 눌러야 하던 문제 방지) */
+  @media (hover:hover) and (pointer:fine){
+    .overdue-item .del:hover{ background:var(--coral-soft); color:var(--coral); opacity:1; }
+    .check:hover{ border-color:var(--red); }
+    li.item:hover .del{ opacity:1; }
+    .del:hover{ background:var(--coral-soft); color:var(--coral); }
+    .act:hover{ background:var(--rule-soft); color:var(--rule); }
+  }
+  /* 폰: 할일 글씨를 눌러 수정 중일 때 삭제(X) 버튼이 보이게 */
+  li.item:focus-within .del{ opacity:1; }
+  /* 더블탭 확대 방지 + 탭 반응 즉시 */
+  html,body{ touch-action:manipulation; -webkit-text-size-adjust:100%; }
+  button,select,.check,.act,.pill,.slot-btn{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 
   .loading-state{ text-align:center; padding:60px 20px; color:var(--muted); font-size:13.5px; }
 
@@ -857,6 +867,10 @@
     const iso = toIso(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
     if(iso !== currentTodayIso){ buildDays(); if(selOffset>=7) selOffset=0; renderAll(); }
   }, 60000);
+  // 화면 확대 차단 (iOS 핀치/더블탭)
+  ['gesturestart','gesturechange','gestureend'].forEach(ev=> document.addEventListener(ev, e=> e.preventDefault()));
+  document.addEventListener('touchmove', e=>{ if(e.touches && e.touches.length>1) e.preventDefault(); }, {passive:false});
+
   document.addEventListener('visibilitychange', async ()=>{
     if(document.visibilityState==='visible' && loaded){
       const now = new Date();
