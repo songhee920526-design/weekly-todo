@@ -110,6 +110,19 @@
   }
   .recur-toggle.on{ background:var(--red-soft); border-color:var(--red); color:var(--red); }
 
+  /* 반복 목록 칩 (작성 화면) */
+  .recur-chips{ display:none; margin-top:10px; }
+  .recur-chips.show{ display:block; }
+  .recur-chips-label{ font-size:11.5px; font-weight:650; color:var(--muted); margin:0 0 6px 2px; }
+  .chip-wrap{ display:flex; flex-wrap:wrap; gap:6px; max-height:104px; overflow-y:auto; }
+  .chip{
+    font-family:inherit; font-size:13px; font-weight:600; color:var(--ink-soft);
+    background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:6px 12px;
+    cursor:pointer; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .chip.selected{ background:var(--red); border-color:var(--red); color:#fff; }
+  .chip-empty{ font-size:12.5px; color:var(--muted); padding:2px; }
+
   .pill-row{ display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; margin-bottom:10px; scrollbar-width:none; }
   .pill-row::-webkit-scrollbar{ display:none; }
   .pill{
@@ -187,7 +200,7 @@
   li.item:focus-within .del{ opacity:1; }
   /* 더블탭 확대 방지 + 탭 반응 즉시 */
   html,body{ touch-action:manipulation; -webkit-text-size-adjust:100%; }
-  button,select,.check,.act,.pill,.slot-btn{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  button,select,.check,.act,.pill,.slot-btn,.chip{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 
   .loading-state{ text-align:center; padding:60px 20px; color:var(--muted); font-size:13.5px; }
 
@@ -212,9 +225,26 @@
   .cycle-empty{ font-size:13px; color:var(--muted); padding:16px 2px; text-align:center; }
   .cycle-row{ padding:12px 2px; border-bottom:1px solid var(--line); }
   .cycle-row:last-child{ border-bottom:none; }
-  .cycle-title{ font-size:14.5px; font-weight:650; color:var(--ink); margin-bottom:3px; }
+  .cycle-top{ display:flex; align-items:flex-start; gap:6px; }
+  .cycle-title{ flex:1; min-width:0; font-size:14.5px; font-weight:650; color:var(--ink); margin-bottom:3px; word-break:break-word; }
   .cycle-meta{ font-size:12px; color:var(--ink-soft); }
   .cycle-next{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+  .cycle-act{
+    flex-shrink:0; width:30px; height:30px; margin-top:-4px; background:none; border:none; cursor:pointer;
+    color:var(--muted); padding:0; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  }
+  .cycle-act.danger{ color:var(--coral); }
+  .cycle-act svg{ pointer-events:none; }
+  .cycle-edit{ display:flex; gap:6px; align-items:center; }
+  .cycle-edit input{
+    flex:1; min-width:0; font-family:inherit; font-size:16px; font-weight:500; padding:8px 10px;
+    border:1.5px solid var(--red); border-radius:8px; background:var(--paper-raised); color:var(--ink); outline:none;
+  }
+  .cycle-edit .mini{
+    flex-shrink:0; font-family:inherit; font-size:13px; font-weight:650; padding:8px 12px; border-radius:8px; cursor:pointer;
+    border:1px solid var(--line); background:var(--paper-raised); color:var(--ink-soft);
+  }
+  .cycle-edit .mini.primary{ background:var(--red); border-color:var(--red); color:#fff; }
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--ink); color:var(--paper); font-size:13px; font-weight:500; padding:10px 16px;
@@ -464,24 +494,122 @@
       wrap.innerHTML = '<div class="cycle-empty">아직 반복으로 표시한 할일이 없어요.</div>';
       return;
     }
-    let html = '';
+    wrap.innerHTML = '';
+    const PENCIL = '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5l2.5 2.5L5.5 13H3v-2.5z"/></svg>';
+    const TRASH = '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.8 7v4M9.2 7v4"/></svg>';
     keys.forEach(key=>{
       const entries = history[key] || [];
       const avg = computeAvgIntervalDays(entries);
       const interval = avg ? flooredInterval(avg) : null;
       const upcoming = todos.filter(t=> t.recurring && normText(t.text)===key).map(t=>t.date).sort();
-      html += '<div class="cycle-row">' +
-        '<div class="cycle-title">'+escapeHtml(key)+'</div>' +
-        '<div class="cycle-meta">' +
-          (interval!==null ? ('주기 '+interval+'일마다') : '완료 기록 부족 · 2번 이상 완료해야 주기가 계산돼요') +
-          (entries.length ? (' · 완료 '+entries.length+'번') : '') +
-        '</div>' +
-        (upcoming.length
-          ? ('<div class="cycle-next">다음 예정 '+dayLabelFor(upcoming[0])+' · 앞으로 '+upcoming.length+'개 예약됨</div>')
-          : '') +
-      '</div>';
+
+      const row = document.createElement('div');
+      row.className = 'cycle-row';
+      row.dataset.key = key;
+
+      const top = document.createElement('div');
+      top.className = 'cycle-top';
+      const title = document.createElement('div');
+      title.className = 'cycle-title';
+      title.textContent = key;
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button'; editBtn.className = 'cycle-act js-edit';
+      editBtn.setAttribute('aria-label','이름 수정'); editBtn.title = '이름 수정';
+      editBtn.innerHTML = PENCIL;
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button'; delBtn.className = 'cycle-act danger js-del';
+      delBtn.setAttribute('aria-label','삭제'); delBtn.title = '삭제';
+      delBtn.innerHTML = TRASH;
+      top.appendChild(title); top.appendChild(editBtn); top.appendChild(delBtn);
+      row.appendChild(top);
+
+      const meta = document.createElement('div');
+      meta.className = 'cycle-meta';
+      meta.textContent = (interval!==null ? ('주기 '+interval+'일마다') : '완료 기록 부족 · 2번 이상 완료해야 주기가 계산돼요') +
+        (entries.length ? (' · 완료 '+entries.length+'번') : '');
+      row.appendChild(meta);
+      if(upcoming.length){
+        const next = document.createElement('div');
+        next.className = 'cycle-next';
+        next.textContent = '다음 예정 '+dayLabelFor(upcoming[0])+' · 앞으로 '+upcoming.length+'개 예약됨';
+        row.appendChild(next);
+      }
+
+      editBtn.onclick = ()=> startCycleEdit(row, key);
+      delBtn.onclick = ()=>{
+        if(!window.confirm('"'+key+'" 반복 항목을 정말 삭제할까요?\n완료 기록과 앞으로 예약된 일정이 함께 지워져요.')) return;
+        deleteRecurring(key);
+      };
+      wrap.appendChild(row);
     });
-    wrap.innerHTML = html;
+  }
+
+  // 제목을 입력창으로 바꿔서 수정
+  function startCycleEdit(row, key){
+    const top = row.querySelector('.cycle-top');
+    top.innerHTML = '';
+    const box = document.createElement('div');
+    box.className = 'cycle-edit';
+    const input = document.createElement('input');
+    input.type = 'text'; input.value = key; input.id = 'cycleEditInput';
+    input.setAttribute('autocomplete','off');
+    const save = document.createElement('button');
+    save.type = 'button'; save.className = 'mini primary js-save'; save.textContent = '저장';
+    const cancel = document.createElement('button');
+    cancel.type = 'button'; cancel.className = 'mini js-cancel'; cancel.textContent = '취소';
+    save.onclick = ()=> renameRecurring(key, input.value);
+    cancel.onclick = ()=> buildCycleList();
+    input.onkeydown = (e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); renameRecurring(key, input.value); }
+      else if(e.key==='Escape'){ buildCycleList(); }
+    };
+    box.appendChild(input); box.appendChild(save); box.appendChild(cancel);
+    top.appendChild(box);
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+
+  // 반복 항목 이름 바꾸기: 완료 기록 + 모든 할일의 제목을 함께 바꿈.
+  // 이미 같은 이름의 항목이 있으면 기록을 합치고(중복 날짜는 한 번만), 주기를 새로 계산해서 예정 일정을 다시 만듦.
+  function renameRecurring(oldKey, newName){
+    const newKey = normText(newName);
+    if(!newKey){ showToast('이름을 입력해주세요'); return; }
+    if(newKey === oldKey){ buildCycleList(); return; }
+
+    const merged = Object.prototype.hasOwnProperty.call(history, newKey) ||
+      todos.some(t=> t.isRecurringType && normText(t.text)===newKey);
+
+    // 1) 완료 기록 이동/병합
+    const moved = history[oldKey] || [];
+    const combined = (history[newKey] || []).concat(moved);
+    const seen = new Set();
+    const uniq = combined
+      .slice().sort((a,b)=> a.date < b.date ? -1 : a.date > b.date ? 1 : 0)
+      .filter(e=>{ const k = e.date+'|'+e.slot; if(seen.has(k)) return false; seen.add(k); return true; });
+    delete history[oldKey];
+    if(uniq.length) history[newKey] = uniq.slice(-30);
+
+    // 2) 할일 제목 일괄 변경
+    todos.forEach(t=>{ if(normText(t.text)===oldKey) t.text = newKey; });
+
+    // 3) 합쳐진 경우엔 자동 생성 예정 일정을 전부 지우고 새 주기로 다시 만듦 (두 줄기가 겹치지 않게)
+    if(merged){
+      todos = todos.filter(t=> !(t.recurring && normText(t.text)===newKey));
+    }
+    regenerateSeriesFor(newKey);
+
+    persist(); renderAll(); buildCycleList();
+    showToast(merged ? '같은 이름과 합쳐서 주기를 다시 계산했어요' : '이름을 바꿨어요');
+  }
+
+  // 반복 항목 삭제: 완료 기록 + 앞으로 예약된(자동 생성) 일정을 지움.
+  // 직접 추가해둔 할일은 지우지 않고 일반 할일로만 바꿔서 남김.
+  function deleteRecurring(key){
+    delete history[key];
+    todos = todos.filter(t=> !(t.recurring && normText(t.text)===key));
+    todos.forEach(t=>{ if(normText(t.text)===key && t.isRecurringType) t.isRecurringType = false; });
+    persist(); renderAll(); buildCycleList();
+    showToast('반복 항목을 삭제했어요');
   }
 
   function dayLabelFor(iso){
@@ -499,6 +627,7 @@
         '<div class="pill-row" id="datePills"></div>' +
         '<div class="slot-row" id="slotRow"></div>' +
         '<button class="recur-toggle" id="recurToggle" type="button">🔁 반복되는 일이에요</button>' +
+        '<div class="recur-chips" id="recurChips"></div>' +
         '<button class="add-btn" id="addBtn">추가</button>' +
       '</div>' +
       '<div id="daysContainer"></div>';
@@ -507,7 +636,48 @@
     recurBtn.onclick = ()=>{
       selRecurring = !selRecurring;
       recurBtn.classList.toggle('on', selRecurring);
+      renderRecurChips();
     };
+    document.getElementById('addInput').addEventListener('input', renderRecurChips);
+  }
+
+  // 반복 토글을 켜면 기존 반복 목록을 칩으로 보여줌 → 누르면 제목이 그대로 채워져서 오타 걱정 없음
+  function renderRecurChips(){
+    const box = document.getElementById('recurChips');
+    if(!box) return;
+    box.classList.toggle('show', selRecurring);
+    box.innerHTML = '';
+    if(!selRecurring) return;
+    const input = document.getElementById('addInput');
+    const current = normText(input ? input.value : '');
+    const label = document.createElement('div');
+    label.className = 'recur-chips-label';
+    label.textContent = '기존 반복 목록에서 고르기';
+    box.appendChild(label);
+    const keys = allRecurringKeys().sort((a,b)=> a.localeCompare(b,'ko'));
+    if(keys.length===0){
+      const empty = document.createElement('div');
+      empty.className = 'chip-empty';
+      empty.textContent = '아직 반복 목록이 없어요. 새로 입력하면 돼요.';
+      box.appendChild(empty);
+      return;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'chip-wrap';
+    keys.forEach(key=>{
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip' + (key===current ? ' selected' : '');
+      chip.textContent = key;
+      chip.title = key;
+      chip.onclick = ()=>{
+        input.value = key;
+        renderRecurChips();
+        input.focus();
+      };
+      wrap.appendChild(chip);
+    });
+    box.appendChild(wrap);
   }
 
   function renderDatePills(){
@@ -566,6 +736,7 @@
     selRecurring = false;
     const recurBtn = document.getElementById('recurToggle');
     if(recurBtn) recurBtn.classList.remove('on');
+    renderRecurChips();
     persist();
     renderAll();
     input.focus();
@@ -830,6 +1001,7 @@
     renderSlotRow();
     renderOverdue();
     renderDays();
+    renderRecurChips();
   }
 
   document.getElementById('cycleBtn').onclick = ()=>{
