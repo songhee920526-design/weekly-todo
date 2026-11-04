@@ -31,10 +31,10 @@ function seed() {
 
 let n = 0;
 const browser = await chromium.launch();
-async function fresh() {
+async function fresh(initial) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 800 } });
   const page = await ctx.newPage();
-  const state = { data: seed(), saves: 0 };
+  const state = { data: initial || seed(), saves: 0 };
   await page.route('**/*', route => {
     const url = new URL(route.request().url());
     if (url.pathname === '/api/todos') {
@@ -56,7 +56,7 @@ async function fresh() {
   return { page, state, errors, ctx };
 }
 const settle = page => page.waitForTimeout(450);
-const ok = async (name, fn) => { const t = await fresh(); try { await fn(t); } finally { assert.deepEqual(t.errors, [], 'page errors'); await t.ctx.close(); } n++; console.log('ok', n, name); };
+const ok = async (name, fn, initial) => { const t = await fresh(initial); try { await fn(t); } finally { assert.deepEqual(t.errors, [], 'page errors'); await t.ctx.close(); } n++; console.log('ok', n, name); };
 const openCycle = async page => { await page.click('#cycleBtn'); await page.waitForSelector('.cycle-row'); };
 
 await ok('chips hidden until repeat toggle is on', async ({ page }) => {
@@ -159,6 +159,40 @@ await ok('deleting keeps a hand-added todo but unmarks it as repeating', async (
   assert.equal(t.isRecurringType, false);
   assert.equal(await page.locator('.cycle-row', { hasText: '청소기' }).count(), 0);
 });
+
+// ---- 늦게 완료하면 이후 예약이 완료일 기준으로 다시 맞춰지는지 ----
+const lateSeed = (dates, cycle = 7) => ({
+  todos: dates.map((n, i) => ({ id: 'a' + i, text: '영양제', date: off(n), slot: 'before', createdAt: 1, recurring: true, isRecurringType: true, cycleDays: cycle })),
+  history: { '영양제': [-35, -28, -21, -14, -7].map(n => ({ date: off(n), slot: 'before' })) },
+});
+const gapsFrom = (data, base) => data.todos.filter(t => t.text === '영양제').map(t => Math.round((new Date(t.date) - new Date(off(base))) / 86400000)).sort((a, b) => a - b);
+
+await ok('late completion (cycle unchanged) re-anchors later schedule to completion date', async ({ page, state }) => {
+  await page.locator('li.item', { hasText: '영양제' }).locator('.check').click(); // off(2)에 완료
+  await settle(page);
+  const g = gapsFrom(state.data, 2);
+  assert.deepEqual(g.slice(0, 3), [7, 14, 21], 'follows 7-day cycle from completion day');
+  assert.equal(state.data.history['영양제'].at(-1).date, off(2));
+  assert.equal(new Set(state.data.todos.filter(t => t.text === '영양제').map(t => t.date)).size, g.length, 'no duplicates');
+}, lateSeed([2, 7, 14, 21]));
+
+await ok('completion also resets a schedule item the user moved by hand (chosen behavior)', async ({ page, state }) => {
+  await page.locator('li.item', { hasText: '영양제' }).locator('.check').click(); // off(1)에 완료
+  await settle(page);
+  assert.deepEqual(gapsFrom(state.data, 1).slice(0, 3), [7, 14, 21]);
+  assert.ok(!state.data.todos.some(t => t.text === '영양제' && t.date === off(30)), 'old hand-moved date replaced');
+}, lateSeed([1, 8, 30]));
+
+await ok('loading the app alone does not rewrite an existing schedule', async ({ state }) => {
+  const dates = state.data.todos.map(t => t.date).sort();
+  assert.deepEqual(dates, [off(2), off(9), off(16), off(30)].sort());
+}, lateSeed([2, 9, 16, 30]));
+
+await ok('completing a non-repeat todo leaves repeat schedules alone', async ({ page, state }) => {
+  await page.locator('li.item', { hasText: '일반일' }).locator('.check').click();
+  await settle(page);
+  assert.deepEqual(state.data.todos.filter(t => t.text === '영양제').map(t => t.date).sort(), [off(3), off(10), off(17)].sort());
+}, (() => { const d = lateSeed([3, 10, 17]); d.todos.push({ id: 'n1', text: '일반일', date: off(1), slot: 'before', createdAt: 1, isRecurringType: false }); return d; })());
 
 await browser.close();
 console.log(`\n${n} behavior tests passed`);

@@ -430,7 +430,8 @@
   // 완료 기록이 2번 이상 쌓인 항목의 예정 일정을 최신 상태로 맞춤.
   // - 주기(간격)가 바뀌었으면: 이미 만들어둔 예정 일정을 전부 지우고 새 주기로 다시 생성 (자동 수정)
   // - 주기는 그대로인데 예정이 얼마 안 남았으면: 모자란 만큼만 더 채워 넣음 (기존 건 안 건드림)
-  function regenerateSeriesFor(key){
+  // force=true: 방금 완료한 항목처럼 기준일(마지막 완료일)이 바뀐 경우, 주기가 같아도 이후 예정 일정을 전부 지우고 완료일 기준으로 다시 만듦
+  function regenerateSeriesFor(key, force){
     const entries = history[key];
     if(!entries || entries.length < 2) return false;
     const avg = computeAvgIntervalDays(entries);
@@ -442,12 +443,12 @@
     let existing = todos.filter(t=> t.recurring && normText(t.text)===key);
     const cycleChanged = existing.length>0 && existing.some(t=> t.cycleDays !== interval);
 
-    if(cycleChanged){
+    if(cycleChanged || force){
       todos = todos.filter(t=> !(t.recurring && normText(t.text)===key));
       existing = [];
     }
 
-    if(!cycleChanged && existing.length >= 3) return false; // 주기도 그대로고 예정도 충분히 있음
+    if(!cycleChanged && !force && existing.length >= 3) return false; // 주기도 그대로고 예정도 충분히 있음
 
     const existingDates = new Set(existing.map(t=>t.date));
     const desired = desiredSeries(last.date, interval);
@@ -466,7 +467,7 @@
       });
       added = true;
     });
-    return cycleChanged || added;
+    return cycleChanged || !!force || added;
   }
 
   function autoGenerateRecurring(){
@@ -810,7 +811,8 @@
       const wasRecurring = t && t.isRecurringType;
       if(wasRecurring) recordCompletion(t.text, t.date, t.slot);
       todos = todos.filter(x=>x.id!==id);
-      if(wasRecurring) autoGenerateRecurring();
+      // 늦게/일찍 완료하면 마지막 완료일이 달라지므로, 이후 예정 일정을 완료일 기준으로 전부 다시 맞춤
+      if(wasRecurring) regenerateSeriesFor(normText(t.text), true);
       persist();
       renderAll();
     }, 220);
