@@ -57,7 +57,7 @@ async function fresh(initial) {
 }
 const settle = page => page.waitForTimeout(450);
 const ok = async (name, fn, initial) => { const t = await fresh(initial); try { await fn(t); } finally { assert.deepEqual(t.errors, [], 'page errors'); await t.ctx.close(); } n++; console.log('ok', n, name); };
-const openCycle = async page => { await page.click('#cycleBtn'); await page.waitForSelector('.cycle-row'); };
+const openCycle = async page => { await page.click('#cycleBtn'); await page.click('.tab[data-tab="var"]'); await page.waitForSelector('#cycleList .cycle-row'); };
 
 await ok('chips hidden until repeat toggle is on', async ({ page }) => {
   assert.equal(await page.locator('#recurChips.show').count(), 0);
@@ -88,7 +88,7 @@ await ok('adding via chip creates a repeat todo with the exact title', async ({ 
 
 await ok('rename without collision updates history and todo titles', async ({ page, state }) => {
   await openCycle(page);
-  await page.locator('.cycle-row', { hasText: '영양제' }).locator('.js-edit').click();
+  await page.locator('#cycleList .cycle-row', { hasText: '영양제' }).locator('.js-edit').click();
   await page.fill('#cycleEditInput', '비타민');
   await page.click('.js-save');
   await settle(page);
@@ -100,7 +100,7 @@ await ok('rename without collision updates history and todo titles', async ({ pa
 
 await ok('rename onto existing title merges history and recalculates cycle', async ({ page, state }) => {
   await openCycle(page);
-  await page.locator('.cycle-row', { hasText: '빨래하귀' }).locator('.js-edit').click();
+  await page.locator('#cycleList .cycle-row', { hasText: '빨래하귀' }).locator('.js-edit').click();
   await page.fill('#cycleEditInput', '빨래하기');
   await page.press('#cycleEditInput', 'Enter');
   await settle(page);
@@ -111,15 +111,15 @@ await ok('rename onto existing title merges history and recalculates cycle', asy
   assert.ok(auto.every(t => t.cycleDays === 3), 'new cycle 3 days (4,3 -> 3.5 floored)');
   assert.equal(auto[0].date, off(0));
   assert.equal(new Set(auto.map(t => t.date)).size, auto.length, 'no duplicate dates');
-  const row = await page.locator('.cycle-row', { hasText: '빨래하기' }).innerText();
+  const row = await page.locator('#cycleList .cycle-row', { hasText: '빨래하기' }).innerText();
   assert.match(row, /주기 3일마다/);
   assert.match(row, /완료 3번/);
-  assert.equal(await page.locator('.cycle-row', { hasText: '빨래하귀' }).count(), 0);
+  assert.equal(await page.locator('#cycleList .cycle-row', { hasText: '빨래하귀' }).count(), 0);
 });
 
 await ok('empty rename is rejected and nothing changes', async ({ page, state }) => {
   await openCycle(page);
-  await page.locator('.cycle-row', { hasText: '영양제' }).locator('.js-edit').click();
+  await page.locator('#cycleList .cycle-row', { hasText: '영양제' }).locator('.js-edit').click();
   await page.fill('#cycleEditInput', '   ');
   await page.click('.js-save');
   await settle(page);
@@ -130,7 +130,7 @@ await ok('empty rename is rejected and nothing changes', async ({ page, state })
 await ok('cancel confirm keeps everything', async ({ page, state }) => {
   page.on('dialog', d => d.dismiss());
   await openCycle(page);
-  await page.locator('.cycle-row', { hasText: '영양제' }).locator('.js-del').click();
+  await page.locator('#cycleList .cycle-row', { hasText: '영양제' }).locator('.js-del').click();
   await settle(page);
   assert.ok('영양제' in state.data.history);
   assert.ok(state.data.todos.some(t => t.text === '영양제' && t.recurring));
@@ -140,24 +140,24 @@ await ok('delete removes history and scheduled todos after confirm', async ({ pa
   let msg = '';
   page.on('dialog', d => { msg = d.message(); d.accept(); });
   await openCycle(page);
-  await page.locator('.cycle-row', { hasText: '영양제' }).locator('.js-del').click();
+  await page.locator('#cycleList .cycle-row', { hasText: '영양제' }).locator('.js-del').click();
   await settle(page);
   assert.match(msg, /정말 삭제할까요/);
   assert.ok(!('영양제' in state.data.history));
   assert.ok(state.data.todos.every(t => t.text !== '영양제'));
-  assert.equal(await page.locator('.cycle-row', { hasText: '영양제' }).count(), 0);
+  assert.equal(await page.locator('#cycleList .cycle-row', { hasText: '영양제' }).count(), 0);
   assert.ok('빨래하기' in state.data.history, 'others untouched');
 });
 
 await ok('deleting keeps a hand-added todo but unmarks it as repeating', async ({ page, state }) => {
   page.on('dialog', d => d.accept());
   await openCycle(page);
-  await page.locator('.cycle-row', { hasText: '청소기' }).locator('.js-del').click();
+  await page.locator('#cycleList .cycle-row', { hasText: '청소기' }).locator('.js-del').click();
   await settle(page);
   const t = state.data.todos.find(x => x.id === 'manual1');
   assert.ok(t, 'todo kept');
   assert.equal(t.isRecurringType, false);
-  assert.equal(await page.locator('.cycle-row', { hasText: '청소기' }).count(), 0);
+  assert.equal(await page.locator('#cycleList .cycle-row', { hasText: '청소기' }).count(), 0);
 });
 
 // ---- 늦게 완료하면 이후 예약이 완료일 기준으로 다시 맞춰지는지 ----

@@ -21,6 +21,8 @@
     font-display: swap;
   }
   :root{
+    --k-var:#2B5EA7;
+    --k-fix:#A3352E;
     --paper:#FBF3E2;
     --paper-raised:#FFFDF7;
     --ink:#232A3D;
@@ -245,10 +247,46 @@
     border:1px solid var(--line); background:var(--paper-raised); color:var(--ink-soft);
   }
   .cycle-edit .mini.primary{ background:var(--red); border-color:var(--red); color:#fff; }
+
+  /* 목록 글씨색: 검정=직접 쓴 일회성, 파랑=변동 주기, 빨강=고정(고정일·고정 주기) */
+  .k-one{ color:var(--ink); }
+  .k-var{ color:var(--k-var); }
+  .k-fix{ color:var(--k-fix); }
+
+  /* 설정 화면 */
+  .settings{ position:fixed; inset:0; background:var(--paper); z-index:40; display:none; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .settings.show{ display:block; }
+  .settings-inner{ max-width:600px; margin:0 auto; padding:calc(24px + env(safe-area-inset-top)) 16px 60px; }
+  .set-head{ display:flex; align-items:center; gap:10px; margin-bottom:20px; padding-bottom:14px; border-bottom:3px double var(--rule); }
+  .set-head h1{ margin:0; flex:1; }
+  .tabs{ display:flex; gap:6px; margin-bottom:18px; }
+  .tab{
+    flex:1; font-family:inherit; font-size:14.5px; font-weight:650; padding:11px 6px; border-radius:10px;
+    border:1.5px solid var(--line); background:var(--paper-raised); color:var(--ink-soft); cursor:pointer;
+  }
+  .tab.on{ background:var(--red); border-color:var(--red); color:#fff; }
+  .sec{ font-size:12px; font-weight:650; color:var(--muted); margin:0 0 8px 2px; }
+  .flabel{ font-size:11.5px; font-weight:650; color:var(--muted); margin:12px 0 6px 2px; }
+  .seg{ display:flex; gap:6px; }
+  .seg .slot-btn{ flex:1; text-align:center; }
+  .nrow{ display:flex; gap:8px; align-items:center; font-size:14px; font-weight:600; color:var(--ink-soft); }
+  .field{
+    font-family:inherit; font-size:16px; font-weight:600; color:var(--ink); background:var(--paper);
+    border:1px solid var(--line); border-radius:8px; padding:8px 12px;
+  }
+  input.field{ width:96px; }
+  .wd{ display:flex; gap:5px; margin-top:8px; }
+  .wd button{
+    flex:1; font-family:inherit; font-size:14px; font-weight:650; color:var(--ink-soft); background:var(--paper);
+    border:1px solid var(--line); border-radius:8px; padding:9px 0; cursor:pointer;
+  }
+  .wd button.on{ background:var(--red); border-color:var(--red); color:#fff; }
+  .list-panel{ background:var(--paper-raised); border:1.5px solid var(--line); border-radius:12px; padding:6px 14px; }
+  .tip{ font-size:12px; color:var(--muted); margin:12px 2px 0; line-height:1.5; }
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--ink); color:var(--paper); font-size:13px; font-weight:500; padding:10px 16px;
-    border-radius:8px; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:10;
+    border-radius:8px; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:60;
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
@@ -262,10 +300,10 @@
       <div class="today-line" id="todayLine"></div>
     </div>
     <div class="header-right">
-      <button class="icon-btn" id="cycleBtn" title="반복 주기 보기" type="button">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-          <path d="M20 11A8 8 0 1 0 18.3 16" stroke="var(--rule)" stroke-width="1.8" stroke-linecap="round"/>
-          <path d="M20 5v6h-6" stroke="var(--rule)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <button class="icon-btn" id="cycleBtn" title="설정" aria-label="설정" type="button">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--rule)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
         </svg>
       </button>
       <div class="sync-dot" id="syncDot"><span class="dot"></span><span id="syncLabel">동기화됨</span></div>
@@ -277,12 +315,53 @@
   </div>
 </div>
 
-<div class="sheet-overlay" id="cycleOverlay">
-  <div class="sheet">
-    <h3>반복 주기 보기</h3>
-    <div id="cycleList"></div>
-    <div class="sheet-btns">
-      <button class="btn ghost" id="cycleClose" type="button">닫기</button>
+<div class="settings" id="settings">
+  <div class="settings-inner">
+    <div class="set-head">
+      <button class="icon-btn" id="setBack" type="button" aria-label="돌아가기">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--rule)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>
+      </button>
+      <h1>설정</h1>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="fix" type="button">고정 항목</button>
+      <button class="tab" data-tab="var" type="button">변동 주기</button>
+    </div>
+
+    <div id="tabFix">
+      <div class="sec">새 고정 항목 추가</div>
+      <div class="add-panel" id="fixForm" style="margin-bottom:22px">
+        <input type="text" id="fixName" placeholder="고정 할일 이름 (예: 설거지)" autocomplete="off">
+        <div class="flabel">방식</div>
+        <div class="seg">
+          <button type="button" class="slot-btn selected" data-mode="day">고정일 · 요일로</button>
+          <button type="button" class="slot-btn" data-mode="cycle">고정 주기 · 며칠마다</button>
+        </div>
+        <div id="fxDay">
+          <div class="flabel">언제?</div>
+          <div class="nrow"><select id="fxWeeks" class="field" aria-label="몇 주마다"></select><span>요일</span></div>
+          <div class="wd" id="fxWd"></div>
+        </div>
+        <div id="fxCycle" hidden>
+          <div class="flabel">몇 일마다?</div>
+          <div class="nrow"><input type="number" id="fxDays" class="field" inputmode="numeric" min="1" max="365" value="14"><span>일마다 (완료한 날부터 다시 셈)</span></div>
+        </div>
+        <div class="flabel">시간대 (주말이면 자동으로 '하루')</div>
+        <div class="seg">
+          <button type="button" class="slot-btn" data-slot="before">출근전</button>
+          <button type="button" class="slot-btn selected" data-slot="after">퇴근후</button>
+        </div>
+        <button class="add-btn" id="fxAdd" type="button">추가</button>
+      </div>
+      <div class="sec" id="fixListTitle">등록된 고정 항목</div>
+      <div class="list-panel" id="fixedList"></div>
+      <div class="tip">지우면 앞으로 예약된 일정도 같이 지워져요. 고치고 싶으면 지우고 다시 추가하면 돼요.</div>
+    </div>
+
+    <div id="tabVar" hidden>
+      <div class="sec">완료 기록으로 주기를 자동 계산하는 항목</div>
+      <div class="list-panel"><div id="cycleList"></div></div>
+      <div class="tip">목록에서는 파란 글씨로 보여요. 작성 화면에서 "반복되는 일이에요"를 켜고 추가한 일이 여기에 모여요.</div>
     </div>
   </div>
 </div>
@@ -296,6 +375,8 @@
 
   let todos = [];
   let history = {}; // { normalizedText: [{date, slot}, ...] } — completion history for recurring detection
+  let rules = {};   // { 제목: {type:'day'|'cycle', ...} } — 설정 화면에서 만든 고정 항목 규칙
+  let curTab = 'fix', fxMode = 'day', fxWeeks = 1, fxWd = new Date().getDay(), fxSlot = 'after';
   let days = [];
   let currentTodayIso = '';
   let selOffset = 0;
@@ -361,7 +442,7 @@
       const res = await fetch(API, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ todos, history })
+        body: JSON.stringify({ todos, history, rules })
       });
       if(!res.ok) throw new Error('save failed');
       setSync('ok');
@@ -576,6 +657,7 @@
     const newKey = normText(newName);
     if(!newKey){ showToast('이름을 입력해주세요'); return; }
     if(newKey === oldKey){ buildCycleList(); return; }
+    if(rules[newKey]){ showToast('같은 이름의 고정 항목이 있어요'); return; }
 
     const merged = Object.prototype.hasOwnProperty.call(history, newKey) ||
       todos.some(t=> t.isRecurringType && normText(t.text)===newKey);
@@ -613,6 +695,188 @@
     showToast('반복 항목을 삭제했어요');
   }
 
+  /* ---------- 목록 색·순서 ---------- */
+  const KIND_RANK = { one:0, var:1, fix:2 };   // 검(일회성) → 파(변동 주기) → 빨(고정)
+  function kindOf(t){ return t.fixed ? 'fix' : (t.isRecurringType ? 'var' : 'one'); }
+  function kindClass(t){ return 'k-' + kindOf(t); }
+  function kindRank(t){ return KIND_RANK[kindOf(t)]; }
+
+  /* ---------- 고정 항목 (설정 화면에서 만듦) ----------
+     고정일  : N주마다 요일 — 완료·미룸과 상관없이 늘 그 날짜에 생성
+     고정 주기: N일마다 — 완료하면 (적힌 날짜 + N일)로 이후 일정을 전부 다시 만듦. 평균 계산은 안 함 */
+  function slotForDate(iso, preferred){
+    const w = new Date(iso+'T00:00:00').getDay();
+    return (w===0 || w===6) ? 'weekend' : preferred;
+  }
+  function makeFixedTodo(key, iso, r){
+    return { id: uid(), text: key, date: iso, slot: slotForDate(iso, r.slot), createdAt: Date.now(), fixed: true };
+  }
+  function firstDateOnOrAfter(fromIso, weekday){
+    let d = fromIso;
+    for(let i=0;i<7;i++){
+      if(new Date(d+'T00:00:00').getDay()===weekday) return d;
+      d = addDaysIso(d, 1);
+    }
+    return fromIso;
+  }
+  // 고정일: 마지막으로 만든 날짜(through) 다음부터 앞으로 90일치까지만 채움 → 완료하거나 지운 날짜는 다시 안 생김
+  function genFixedDay(key){
+    const r = rules[key];
+    if(!r || r.type!=='day') return false;
+    const step = 7 * r.weeks;
+    const limit = addDaysIso(currentTodayIso, GEN_HORIZON_DAYS);
+    let next = r.through ? addDaysIso(r.through, step) : r.start;
+    let changed = false, guard = 0;
+    while(next <= limit && guard++ < 200){
+      if(next >= currentTodayIso) todos.push(makeFixedTodo(key, next, r));   // 지난 날짜는 만들지 않음
+      r.through = next;
+      changed = true;
+      next = addDaysIso(next, step);
+    }
+    return changed;
+  }
+  function autoGenerateFixed(){
+    let changed = false;
+    Object.keys(rules).forEach(key=>{ if(genFixedDay(key)) changed = true; });
+    return changed;
+  }
+  function autoGenerateAll(){
+    const a = autoGenerateRecurring();
+    const b = autoGenerateFixed();
+    return a || b;
+  }
+  // 고정 주기: 기준일(적힌 날짜)로부터 N일마다 이후 일정을 전부 다시 만듦
+  function regenFixedCycle(key, anchorIso){
+    const r = rules[key];
+    if(!r || r.type!=='cycle') return;
+    todos = todos.filter(t=> !(t.fixed && normText(t.text)===key));
+    let dates = desiredSeries(anchorIso, r.days);
+    if(dates.length===0) dates = [addDaysIso(anchorIso, r.days)];   // 주기가 아주 길어도 다음 일정 1개는 만듦
+    dates.forEach(d=> todos.push(makeFixedTodo(key, d, r)));
+  }
+  function ruleText(r){
+    if(r.type==='day'){
+      const wk = (r.weekday===0 || r.weekday===6);
+      return (r.weeks===1 ? '매주 ' : r.weeks+'주마다 ') + DOW[r.weekday] + '요일 · ' + (wk ? '하루' : slotLabel(r.slot));
+    }
+    return r.days + '일마다 · ' + slotLabel(r.slot) + ' · 완료한 날부터 다시 셈';
+  }
+
+  function addFixed(){
+    const input = document.getElementById('fixName');
+    const key = normText(input.value);
+    if(!key){ showToast('이름을 입력해주세요'); return; }
+    if(rules[key]){ showToast('이미 있는 고정 항목이에요'); return; }
+    if(allRecurringKeys().indexOf(key) >= 0){ showToast('같은 이름의 변동 주기 항목이 있어요'); return; }
+    if(fxMode==='day'){
+      rules[key] = { type:'day', weeks:fxWeeks, weekday:fxWd, slot:fxSlot, start:firstDateOnOrAfter(currentTodayIso, fxWd), through:null };
+      genFixedDay(key);
+    } else {
+      const n = parseInt(document.getElementById('fxDays').value, 10);
+      if(!(n>=1 && n<=365)){ showToast('1~365일 사이로 입력해주세요'); return; }
+      rules[key] = { type:'cycle', days:n, slot:fxSlot };
+      todos.push(makeFixedTodo(key, currentTodayIso, rules[key]));   // 첫 할일은 오늘. 완료하면 그날부터 주기를 셈
+    }
+    input.value = '';
+    persist(); renderAll(); buildFixedList();
+    showToast('고정 항목을 추가했어요');
+  }
+
+  function deleteFixed(key){
+    delete rules[key];
+    todos = todos.filter(t=> !(t.fixed && normText(t.text)===key));
+    persist(); renderAll(); buildFixedList();
+    showToast('고정 항목을 삭제했어요');
+  }
+
+  function buildFixedList(){
+    const wrap = document.getElementById('fixedList');
+    const keys = Object.keys(rules).sort((a,b)=> a.localeCompare(b,'ko'));
+    document.getElementById('fixListTitle').textContent = '등록된 고정 항목 (' + keys.length + ')';
+    wrap.innerHTML = '';
+    if(keys.length===0){
+      wrap.innerHTML = '<div class="cycle-empty">아직 고정 항목이 없어요.</div>';
+      return;
+    }
+    const TRASH = '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.8 7v4M9.2 7v4"/></svg>';
+    keys.forEach(key=>{
+      const upcoming = todos.filter(t=> t.fixed && normText(t.text)===key).map(t=>t.date).sort();
+      const row = document.createElement('div');
+      row.className = 'cycle-row';
+      row.dataset.key = key;
+      const top = document.createElement('div');
+      top.className = 'cycle-top';
+      const title = document.createElement('div');
+      title.className = 'cycle-title k-fix';
+      title.textContent = key;
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'cycle-act danger js-fixdel';
+      del.setAttribute('aria-label','삭제'); del.title = '삭제';
+      del.innerHTML = TRASH;
+      del.onclick = ()=>{
+        if(!window.confirm('"'+key+'" 고정 항목을 정말 삭제할까요?\n앞으로 예약된 일정도 함께 지워져요.')) return;
+        deleteFixed(key);
+      };
+      top.appendChild(title); top.appendChild(del);
+      row.appendChild(top);
+      const meta = document.createElement('div');
+      meta.className = 'cycle-meta';
+      meta.textContent = ruleText(rules[key]);
+      row.appendChild(meta);
+      if(upcoming.length){
+        const next = document.createElement('div');
+        next.className = 'cycle-next';
+        next.textContent = '다음 예정 '+dayLabelFor(upcoming[0])+' · 앞으로 '+upcoming.length+'개 예약됨';
+        row.appendChild(next);
+      }
+      wrap.appendChild(row);
+    });
+  }
+
+  function showTab(tab){
+    curTab = tab;
+    document.getElementById('tabFix').hidden = tab!=='fix';
+    document.getElementById('tabVar').hidden = tab!=='var';
+    document.querySelectorAll('#settings .tab').forEach(b=> b.classList.toggle('on', b.dataset.tab===tab));
+    if(tab==='fix') buildFixedList(); else buildCycleList();
+  }
+
+  function syncFixForm(){
+    document.querySelectorAll('#fixForm [data-mode]').forEach(b=> b.classList.toggle('selected', b.dataset.mode===fxMode));
+    document.querySelectorAll('#fixForm [data-slot]').forEach(b=> b.classList.toggle('selected', b.dataset.slot===fxSlot));
+    document.querySelectorAll('#fxWd button').forEach(b=> b.classList.toggle('on', parseInt(b.dataset.wd,10)===fxWd));
+    document.getElementById('fxWeeks').value = String(fxWeeks);
+    document.getElementById('fxDay').hidden = fxMode!=='day';
+    document.getElementById('fxCycle').hidden = fxMode!=='cycle';
+  }
+
+  function setupSettings(){
+    const settingsEl = document.getElementById('settings');
+    document.getElementById('cycleBtn').onclick = ()=>{ settingsEl.classList.add('show'); showTab(curTab); };
+    document.getElementById('setBack').onclick = ()=> settingsEl.classList.remove('show');
+    settingsEl.querySelectorAll('.tab').forEach(b=> b.onclick = ()=> showTab(b.dataset.tab));
+
+    const weeksSel = document.getElementById('fxWeeks');
+    for(let n=1;n<=8;n++){
+      const o = document.createElement('option');
+      o.value = String(n); o.textContent = n+'주마다';
+      weeksSel.appendChild(o);
+    }
+    weeksSel.onchange = ()=>{ fxWeeks = parseInt(weeksSel.value,10); };
+    const wd = document.getElementById('fxWd');
+    for(let i=0;i<7;i++){
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.wd = String(i); b.textContent = DOW[i];
+      b.onclick = ()=>{ fxWd = i; syncFixForm(); };
+      wd.appendChild(b);
+    }
+    document.querySelectorAll('#fixForm [data-mode]').forEach(b=> b.onclick = ()=>{ fxMode = b.dataset.mode; syncFixForm(); });
+    document.querySelectorAll('#fixForm [data-slot]').forEach(b=> b.onclick = ()=>{ fxSlot = b.dataset.slot; syncFixForm(); });
+    document.getElementById('fxAdd').onclick = addFixed;
+    document.getElementById('fixName').addEventListener('keydown', e=>{ if(e.key==='Enter') addFixed(); });
+    syncFixForm();
+  }
+
   function dayLabelFor(iso){
     const day = days.find(d=>d.iso===iso);
     if(day) return day.dayName+' '+day.dateLabel;
@@ -627,7 +891,7 @@
         '<input type="text" id="addInput" placeholder="할일을 입력하고 Enter" autocomplete="off">' +
         '<div class="pill-row" id="datePills"></div>' +
         '<div class="slot-row" id="slotRow"></div>' +
-        '<button class="recur-toggle" id="recurToggle" type="button">🔁 반복되는 일이에요</button>' +
+        '<button class="recur-toggle" id="recurToggle" type="button">🔁 반복되는 일이에요 (주기 자동 계산)</button>' +
         '<div class="recur-chips" id="recurChips"></div>' +
         '<button class="add-btn" id="addBtn">추가</button>' +
       '</div>' +
@@ -726,6 +990,7 @@
     const input = document.getElementById('addInput');
     const text = input.value.trim();
     if(!text) return;
+    if(selRecurring && rules[text]){ showToast('고정 항목 이름이에요. 변동 주기로는 쓸 수 없어요'); return; }
     const day = days[selOffset];
     todos.push({
       id: uid(), text, date: day.iso,
@@ -775,7 +1040,7 @@
       row.id = 'item-'+t.id;
 
       const textWrap = document.createElement('div');
-      textWrap.className = 'overdue-text';
+      textWrap.className = 'overdue-text ' + kindClass(t);
       textWrap.textContent = t.text;
       const meta = document.createElement('span');
       meta.className = 'overdue-meta';
@@ -813,6 +1078,8 @@
       todos = todos.filter(x=>x.id!==id);
       // 늦게/일찍 완료하면 마지막 완료일이 달라지므로, 이후 예정 일정을 완료일 기준으로 전부 다시 맞춤
       if(wasRecurring) regenerateSeriesFor(normText(t.text), true);
+      // 고정 주기 항목: 적힌 날짜 기준으로 이후 일정을 다시 맞춤 (고정일은 완료와 상관없으니 그대로)
+      if(t && t.fixed) regenFixedCycle(normText(t.text), t.date);
       persist();
       renderAll();
     }, 220);
@@ -823,6 +1090,11 @@
     if(!t) return;
     const clean = newText.trim();
     if(!clean){ todos = todos.filter(x=>x.id!==id); persist(); renderAll(); return; }
+    if(t.fixed && normText(clean) !== normText(t.text)){   // 이름을 바꾸면 고정 규칙에서 빠져 일반 할일이 됨
+      t.fixed = false;
+      const el = document.querySelector('#item-'+id+' .item-text');
+      if(el) el.className = 'item-text k-one';
+    }
     t.text = clean; persist();
   }
 
@@ -838,7 +1110,7 @@
     check.onclick = ()=> completeTodo(t.id);
 
     const textEl = document.createElement('div');
-    textEl.className = 'item-text';
+    textEl.className = 'item-text ' + kindClass(t);
     textEl.contentEditable = 'true';
     textEl.spellcheck = false;
     textEl.textContent = t.text;
@@ -851,19 +1123,6 @@
     del.onclick = ()=>{ todos = todos.filter(x=>x.id!==t.id); persist(); renderAll(); };
 
     li.appendChild(check);
-    if(t.recurring){
-      const badge = document.createElement('span');
-      badge.textContent = '🔁';
-      badge.title = '완료 기록을 바탕으로 자동 생성된 할일이에요';
-      badge.style.cssText = 'font-size:12px; margin-top:2px; flex-shrink:0;';
-      li.appendChild(badge);
-    } else if(t.isRecurringType){
-      const badge = document.createElement('span');
-      badge.textContent = '🔁';
-      badge.title = '반복 할일로 표시됨 · 완료 기록이 쌓이면 주기를 계산해 자동으로 다음 할일이 생겨요';
-      badge.style.cssText = 'font-size:12px; margin-top:2px; flex-shrink:0; opacity:0.45;';
-      li.appendChild(badge);
-    }
     // 이동 버튼: 누르면 날짜/시간대 고르는 목록이 뜸 (안 보이는 select를 아이콘 위에 겹쳐둠)
     const moveWrap = document.createElement('span');
     moveWrap.className = 'act';
@@ -956,7 +1215,7 @@
     } else {
       const ul = document.createElement('ul');
       ul.className = 'items';
-      items.forEach(t=> ul.appendChild(makeItemLi(t)));
+      items.slice().sort((a,b)=> kindRank(a)-kindRank(b)).forEach(t=> ul.appendChild(makeItemLi(t)));  // 검 → 파 → 빨, 같은 색끼리는 원래 순서 유지
       wrap.appendChild(ul);
     }
     return wrap;
@@ -1006,29 +1265,20 @@
     renderRecurChips();
   }
 
-  document.getElementById('cycleBtn').onclick = ()=>{
-    buildCycleList();
-    document.getElementById('cycleOverlay').classList.add('show');
-  };
-  document.getElementById('cycleClose').onclick = ()=>{
-    document.getElementById('cycleOverlay').classList.remove('show');
-  };
-  document.getElementById('cycleOverlay').onclick = (e)=>{
-    if(e.target.id==='cycleOverlay') e.currentTarget.classList.remove('show');
-  };
+  setupSettings();
 
   async function init(){
     buildDays();
     try{
       const raw = await loadRemote();
-      if(Array.isArray(raw)){ todos = raw; history = {}; } // 예전 형식(배열)과의 호환
-      else { todos = raw.todos || []; history = raw.history || {}; }
+      if(Array.isArray(raw)){ todos = raw; history = {}; rules = {}; } // 예전 형식(배열)과의 호환
+      else { todos = raw.todos || []; history = raw.history || {}; rules = raw.rules || {}; }
     }catch(e){
-      todos = []; history = {};
+      todos = []; history = {}; rules = {};
       setSync('offline');
       showToast('목록을 불러오지 못했어요. 새로고침해보세요.');
     }
-    if(autoGenerateRecurring()) persist();
+    if(autoGenerateAll()) persist();
     buildLayout();
     document.getElementById('addBtn').addEventListener('click', addTodo);
     document.getElementById('addInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addTodo(); });
@@ -1052,8 +1302,8 @@
       if(iso !== currentTodayIso){ buildDays(); renderAll(); }
       try{
         const raw = await loadRemote();
-        if(Array.isArray(raw)){ todos = raw; } else { todos = raw.todos || []; history = raw.history || history; }
-        if(autoGenerateRecurring()) persist();
+        if(Array.isArray(raw)){ todos = raw; } else { todos = raw.todos || []; history = raw.history || history; rules = raw.rules || rules; }
+        if(autoGenerateAll()) persist();
         renderAll(); setSync('ok');
       }
       catch(e){ setSync('offline'); }
