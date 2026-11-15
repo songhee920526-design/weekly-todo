@@ -226,5 +226,9 @@ await ok('old data without rules still loads; 변동 주기 toggle label still w
   assert.equal(await page.locator('.chip').count(), 0, 'no chips for fixed items');
 }, { todos: [], history: {} });
 
+await ok('page top padding expression is valid CSS (44px where there is no notch)', async ({ page }) => {
+  assert.equal(await page.evaluate(() => getComputedStyle(document.body).paddingTop), '44px');
+}, { todos: [], history: {} });
+
 await browser.close();
 console.log(`\n${n} fixed/settings tests passed`);

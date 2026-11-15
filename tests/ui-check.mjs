@@ -36,6 +36,10 @@ ok('gesture zoom blocked, no touchend preventDefault', () => {
   assert.match(html, /gesturestart/);
   assert.ok(!/touchend/.test(html));
 });
+ok('top padding clears the iPhone status bar / notch (safe-area-inset-top)', () => {
+  assert.match(html, /body\{[^}]*padding:max\(44px, calc\(env\(safe-area-inset-top\) \+ 12px\)\) 16px 90px/);
+  assert.match(html, /viewport-fit=cover/);
+});
 ok('inline script parses', () => {
   const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   assert.ok(scripts.length > 0);
